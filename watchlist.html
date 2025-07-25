@@ -3,11 +3,28 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MoodMatch Watchlist</title>
+  <title>MoodMatch - Watchlist</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" as="style" onload="this.rel='stylesheet'" 
+    href="https://fonts.googleapis.com/css2?display=swap&family=Noto+Sans:wght@400;500;700;900&family=Plus+Jakarta+Sans:wght@400;500;700;800" />
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <script defer src="script.js"></script>
 </head>
-<body>
-  <h1>Watchlist</h1>
-  <div id="watchlistContainer"></div>
+<body class="bg-[#fcf8f8]" style='font-family:"Plus Jakarta Sans","Noto Sans",sans-serif;'>
+
+  <!-- Header -->
+  <header class="flex items-center justify-between border-b border-[#f3e7e8] px-10 py-3">
+    <h2 class="text-lg font-bold text-[#1b0e0e]">MoodMatch</h2>
+    <nav class="flex gap-8 text-sm font-medium text-[#1b0e0e]">
+      <a href="index.html">Home</a>
+      <a href="watchlist.html" class="font-bold">Watchlist</a>
+    </nav>
+  </header>
+
+  <!-- Watchlist -->
+  <main class="flex flex-col py-8 max-w-[960px] mx-auto">
+    <h2 class="text-[28px] font-bold mb-4 px-4">Your Saved Titles</h2>
+    <div id="watchlistContainer" class="flex flex-wrap gap-4 px-4"></div>
+  </main>
 </body>
 </html>
