@@ -1,4 +1,4 @@
-const API_URL = "https://https://moodmatch-api-4vdp.vercel.app/api/mood"; // Replace with your actual Vercel API URL
+const API_URL = "https://moodmatch-api-4vdp.vercel.app/api/mood"; // Replace with your actual Vercel API URL
 const TMDB_API_KEY = "c5bb9a766bdc90fcc8f7293f6cd9c26a";
 
 const searchInput = document.getElementById("searchInput");
