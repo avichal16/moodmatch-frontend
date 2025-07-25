@@ -13,7 +13,7 @@ const watchlistContainer = document.getElementById("watchlistContainer");
 let selectedTitles = [];
 let selectedTags = [];
 
-// Populate Tag Options
+// Tag Options
 const tags = ["Suspenseful","Thought-Provoking","Wholesome","Intense","Emotional","Funny","Romantic","Action-Packed","Mysterious","Heartwarming"];
 if (tagContainer) {
   tags.forEach(tag => {
@@ -33,84 +33,92 @@ if (tagContainer) {
   });
 }
 
-// Search Titles
+// Search Suggestions
 if (searchInput) {
   searchInput.addEventListener("input", () => {
     const query = searchInput.value.trim();
     if (query.length > 2) searchAll(query);
+    else searchResults.innerHTML = "";
   });
 }
 
 async function searchAll(query) {
   searchResults.innerHTML="<li class='p-2 text-gray-500'>Searching...</li>";
   try {
-    const tmdbRes = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`);
-    const tmdbData = await tmdbRes.json();
-    const tmdbResults = (tmdbData.results||[]).slice(0,5).map(item=>({id:item.id,title:item.title||item.name,type:item.media_type}));
+    const tmdbRes=await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}`);
+    const tmdbData=await tmdbRes.json();
+    const tmdbResults=(tmdbData.results||[]).slice(0,5).map(i=>({
+      id:i.id,title:i.title||i.name,type:i.media_type,image:i.poster_path?`https://image.tmdb.org/t/p/w92${i.poster_path}`:""
+    }));
 
-    const bookRes = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5`);
-    const bookData = await bookRes.json();
-    const bookResults = (bookData.items||[]).map(b=>({id:b.id,title:b.volumeInfo.title,type:"book"}));
+    const bookRes=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5`);
+    const bookData=await bookRes.json();
+    const bookResults=(bookData.items||[]).map(b=>({
+      id:b.id,title:b.volumeInfo.title,type:"book",image:b.volumeInfo.imageLinks?.thumbnail||""
+    }));
 
-    const results = [...tmdbResults,...bookResults];
+    const results=[...tmdbResults,...bookResults];
     searchResults.innerHTML="";
-    if (!results.length) {
-      searchResults.innerHTML="<li class='p-2 text-gray-500'>No results</li>";
-    } else {
-      results.forEach(item=>{
-        const li=document.createElement("li");
-        li.textContent=item.title;
-        li.className="p-2 hover:bg-gray-100 cursor-pointer";
-        li.onclick=()=>{
-          selectedTitles.push(item);
-          const chip=document.createElement("div");
-          chip.className="px-3 py-1 bg-[#f3e7e8] rounded-full text-sm";
-          chip.textContent=item.title;
-          selectedList.appendChild(chip);
-          searchResults.innerHTML="";
-          searchInput.value="";
-        };
-        searchResults.appendChild(li);
-      });
-    }
+    results.forEach(item=>{
+      const li=document.createElement("li");
+      li.className="flex items-center gap-3 p-2 hover:bg-gray-100 cursor-pointer";
+      li.innerHTML=`<img src="${item.image}" class="w-8 h-12 object-cover rounded"><span>${item.title} <span class="text-xs text-gray-500">(${item.type})</span></span>`;
+      li.onclick=()=>{
+        selectedTitles.push(item);
+        const chip=document.createElement("div");
+        chip.className="px-3 py-1 bg-[#f3e7e8] rounded-full text-sm";
+        chip.textContent=item.title;
+        selectedList.appendChild(chip);
+        searchResults.innerHTML="";
+        searchInput.value="";
+      };
+      searchResults.appendChild(li);
+    });
   } catch(e){console.error(e);}
 }
 
-// Fetch Mood Analysis + Recommendations
+// Mood Analysis + Recommendations
 const recommendBtn=document.getElementById("recommendButton");
 if (recommendBtn) recommendBtn.onclick=()=>loadRecommendations();
 
-async function getMoodAnalysis(text, selectedTags=[]) {
-  const params=new URLSearchParams({ moodText: text, tags: selectedTags.join(",") });
-  const res=await fetch(`${API_URL}?${params}`);
-  return res.json();
+async function getMoodAnalysis(text,tags=[]) {
+  try {
+    const params=new URLSearchParams({ moodText:text, tags:tags.join(",") });
+    const res=await fetch(`${API_URL}?${params}`);
+    return res.json();
+  } catch(e){
+    console.error("Mood API error",e);
+    return {tags:tags,genres:[]};
+  }
 }
 
 async function loadRecommendations() {
   movieList.innerHTML="<p class='p-4 text-gray-500'>Loading recommendations...</p>";
   bookList.innerHTML="";
 
-  const moodData = await getMoodAnalysis(moodText.value.trim(), selectedTags);
-  const genres = moodData.genres || [];
-  const keyword = moodData.tags?.[0] || "bestseller";
+  const moodData=await getMoodAnalysis(moodText.value.trim(),selectedTags);
+  const genres=moodData.genres||[];
+  const keyword=selectedTitles[0]?.title||moodData.tags?.[0]||"bestseller";
 
   try {
-    // Movies
     const movieRes=await fetch(`https://api.themoviedb.org/3/discover/movie?api_key=${TMDB_API_KEY}&sort_by=popularity.desc&with_genres=${genres.join(",")}`);
-    const movies=(await movieRes.json()).results.slice(0,6).map(m=>({id:m.id,title:m.title,image:`https://image.tmdb.org/t/p/w200${m.poster_path}`,desc:m.overview,type:"movie"}));
+    const movies=(await movieRes.json()).results.slice(0,6).map(m=>({
+      id:m.id,title:m.title,image:`https://image.tmdb.org/t/p/w200${m.poster_path}`,desc:m.overview,type:"movie"
+    }));
 
-    // Books
     const bookRes=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(keyword)}&maxResults=6`);
-    const books=(await bookRes.json()).items.map(b=>({id:b.id,title:b.volumeInfo.title,image:b.volumeInfo.imageLinks?.thumbnail||"",desc:b.volumeInfo.description||"",type:"book"}));
+    const books=(await bookRes.json()).items.map(b=>({
+      id:b.id,title:b.volumeInfo.title,image:b.volumeInfo.imageLinks?.thumbnail||"",desc:b.volumeInfo.description||"",type:"book"
+    }));
 
     movieList.innerHTML="";
-    movies.forEach(item=>renderCard(item,movieList));
+    movies.forEach(i=>renderCard(i,movieList));
     bookList.innerHTML="";
-    books.forEach(item=>renderCard(item,bookList));
+    books.forEach(i=>renderCard(i,bookList));
   } catch(e){console.error(e);}
 }
 
-function renderCard(item, container) {
+function renderCard(item,container){
   const card=document.createElement("div");
   card.className="p-4 border rounded-lg bg-white max-w-[220px]";
   card.innerHTML=`
@@ -127,8 +135,8 @@ function renderCard(item, container) {
   };
 }
 
-// Watchlist Page
-if (watchlistContainer) {
+// Watchlist
+if (watchlistContainer){
   const items=JSON.parse(localStorage.getItem("watchlist")||"[]");
   if (!items.length) watchlistContainer.innerHTML="<p class='p-4 text-gray-500'>No saved titles.</p>";
   items.forEach(item=>{
