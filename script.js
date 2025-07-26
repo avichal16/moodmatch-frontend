@@ -38,16 +38,30 @@ if (logoutBtn) {
 // --- Update UI on Login State ---
 auth.onAuthStateChanged(user => {
   currentUser = user;
+  const authSection = document.getElementById("authSection");
+  
+  // Remove any old greeting
+  const oldGreeting = document.getElementById("userGreeting");
+  if (oldGreeting) oldGreeting.remove();
+
   if (user) {
     loginBtn?.classList.add("hidden");
     logoutBtn?.classList.remove("hidden");
-    console.log(`Logged in as ${user.displayName || user.email}`);
-    loadWatchlist(); // Only loads on watchlist page
+
+    // Show "Hi, [Name]" beside Logout
+    const greeting = document.createElement("span");
+    greeting.id = "userGreeting";
+    greeting.className = "text-sm text-gray-700 self-center";
+    greeting.textContent = `Hi, ${user.displayName || user.email}`;
+    authSection.appendChild(greeting);
+
+    loadWatchlist?.(); // Load watchlist if on that page
   } else {
     loginBtn?.classList.remove("hidden");
     logoutBtn?.classList.add("hidden");
   }
 });
+
 
 // --- Firestore Watchlist Functions ---
 async function saveToWatchlist(item) {
