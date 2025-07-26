@@ -1,5 +1,4 @@
-
-// HIGHLIGHTED: Firebase Initialization (with your config)
+// --- Firebase Initialization ---
 const firebaseConfig = {
   apiKey: "AIzaSyBpjHeCWkzMYDU-F3vKyeGL6BWR-VTptu0",
   authDomain: "moodmatch-c44c3.firebaseapp.com",
@@ -14,14 +13,14 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 let currentUser = null;
 
-// HIGHLIGHTED: Auth button logic (Google Sign-In)
+// --- Auth Buttons ---
 const loginBtn = document.getElementById("loginButton");
 const logoutBtn = document.getElementById("logoutButton");
 
 if (loginBtn) {
   loginBtn.addEventListener("click", () => {
     const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider);
+    auth.signInWithPopup(provider).catch(err => console.error("Login error:", err));
   });
 }
 
@@ -29,52 +28,76 @@ if (logoutBtn) {
   logoutBtn.addEventListener("click", () => auth.signOut());
 }
 
+// --- Update UI on Login State ---
 auth.onAuthStateChanged(user => {
   currentUser = user;
   if (user) {
     loginBtn?.classList.add("hidden");
     logoutBtn?.classList.remove("hidden");
-    loadWatchlist();
+    console.log(`Logged in as ${user.displayName || user.email}`);
+    loadWatchlist(); // Only loads on watchlist page
   } else {
     loginBtn?.classList.remove("hidden");
     logoutBtn?.classList.add("hidden");
   }
 });
 
-// HIGHLIGHTED: Watchlist Firestore Functions
+// --- Firestore Watchlist Functions ---
 async function saveToWatchlist(item) {
-  if (!currentUser) return alert("Please log in to save to your watchlist.");
+  if (!currentUser) {
+    alert("Please log in to save to your watchlist.");
+    return;
+  }
+
   const ref = db.collection("watchlists").doc(currentUser.uid);
   const doc = await ref.get();
   const list = doc.exists ? doc.data().items || [] : [];
-  list.push(item);
+
+  // Avoid duplicates
+  if (!list.find(x => x.title === item.title)) {
+    list.push({
+      title: item.title,
+      type: item.type,
+      image: item.image || "",
+      desc: item.desc || ""
+    });
+  }
+
   await ref.set({ items: list });
-  alert("Saved to Watchlist!");
+  alert("Saved to your watchlist!");
+  setTimeout(() => loadWatchlist(), 500); // Refresh after save
 }
 
 async function loadWatchlist() {
   const container = document.getElementById("watchlistContainer");
   if (!container || !currentUser) return;
+
   const ref = db.collection("watchlists").doc(currentUser.uid);
   const doc = await ref.get();
   const list = doc.exists ? doc.data().items || [] : [];
+
   container.innerHTML = "";
   if (!list.length) {
     container.innerHTML = "<p class='p-4 text-gray-500'>No saved titles.</p>";
+    return;
   }
+
   list.forEach(item => renderCard(item, container, true));
 }
 
 async function removeFromWatchlist(title) {
+  if (!currentUser) return;
+
   const ref = db.collection("watchlists").doc(currentUser.uid);
   const doc = await ref.get();
   if (!doc.exists) return;
+
   const list = doc.data().items.filter(x => x.title !== title);
   await ref.set({ items: list });
   loadWatchlist();
 }
 
-
+// --- Recommendation Logic (Movies, TV, Books) ---
 const API_URL = "https://moodmatch-api-4vdp.vercel.app/api/mood"; // Replace with your actual Vercel API URL
 const TMDB_API_KEY = "c5bb9a766bdc90fcc8f7293f6cd9c26a";
 
@@ -86,13 +109,12 @@ const moodText = document.getElementById("moodText");
 const movieList = document.getElementById("movieList");
 const tvList = document.getElementById("tvList");
 const bookList = document.getElementById("bookList");
-const watchlistContainer = document.getElementById("watchlistContainer");
 
 let selectedTitle = null;
 let dynamicTags = [];
 let selectedTags = [];
 
-// Search Suggestions
+// --- Search Suggestions ---
 if (searchInput) {
   searchInput.addEventListener("input", () => {
     const query = searchInput.value.trim();
@@ -142,7 +164,7 @@ async function searchAll(query) {
   }
 }
 
-// Build dynamic tag cloud
+// --- Tag Cloud ---
 async function buildTagCloud(item) {
   tagContainer.innerHTML = "<p class='text-gray-500'>Loading tags...</p>";
   dynamicTags = [];
@@ -201,7 +223,7 @@ function renderTagCloud() {
   });
 }
 
-// Recommendations
+// --- Get Recommendations ---
 const recommendBtn = document.getElementById("recommendButton");
 if (recommendBtn) recommendBtn.onclick = () => loadRecommendations();
 
@@ -217,16 +239,12 @@ async function loadRecommendations() {
     const res = await fetch(`${API_URL}?moodText=${encodeURIComponent(moodInput)}&tags=${encodeURIComponent(tagsForAI)}`);
     const data = await res.json();
 
-    // Movies
     const movieDetails = await Promise.all(data.movies.map(t => fetchTMDBDetails(t, "movie")));
-    const sortedMovies = movieDetails.filter(Boolean).sort((a,b) => b.popularity - a.popularity).slice(0,6);
-
-    // TV Series
     const tvDetails = await Promise.all(data.tv.map(t => fetchTMDBDetails(t, "tv")));
-    const sortedTV = tvDetails.filter(Boolean).sort((a,b) => b.popularity - a.popularity).slice(0,6);
-
-    // Books
     const bookDetails = await Promise.all(data.books.map(t => fetchBookDetails(t)));
+
+    const sortedMovies = movieDetails.filter(Boolean).sort((a,b) => b.popularity - a.popularity).slice(0,6);
+    const sortedTV = tvDetails.filter(Boolean).sort((a,b) => b.popularity - a.popularity).slice(0,6);
     const finalBooks = bookDetails.filter(Boolean).slice(0,6);
 
     movieList.innerHTML = "";
@@ -244,6 +262,7 @@ async function loadRecommendations() {
   }
 }
 
+// --- Fetch Details ---
 async function fetchTMDBDetails(title, type) {
   try {
     const res = await fetch(`https://api.themoviedb.org/3/search/${type}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(title)}`);
@@ -277,39 +296,23 @@ async function fetchBookDetails(title) {
   } catch { return null; }
 }
 
-function renderCard(item, container) {
+// --- Render Cards ---
+function renderCard(item, container, isWatchlist = false) {
   const card = document.createElement("div");
   card.className = "p-4 border rounded-lg bg-white max-w-[220px]";
   card.innerHTML = `
-    <img src="${item.image}" class="rounded mb-2">
-    <h3 class="font-bold">${item.title} <span class="text-xs text-gray-500">(${item.type})</span></h3>
+    <img src="${item.image || ''}" class="rounded mb-2">
+    <h3 class="font-bold">${item.title || 'Untitled'} <span class="text-xs text-gray-500">(${item.type || ''})</span></h3>
     <p class="text-xs text-gray-600">${item.desc?.slice(0, 100) || "No description"}...</p>
-    <button class="mt-2 px-3 py-1 bg-[#f3e7e8] rounded-full text-sm addWatch">Save</button>`;
+    ${isWatchlist 
+      ? `<button class="mt-2 px-3 py-1 bg-[#e92932] text-white rounded-full text-sm removeBtn">Remove</button>`
+      : `<button class="mt-2 px-3 py-1 bg-[#f3e7e8] rounded-full text-sm addWatch">Save</button>`}
+  `;
   container.appendChild(card);
-  card.querySelector(".addWatch").onclick = () => {
-    const list = JSON.parse(localStorage.getItem("watchlist") || "[]");
-    list.push(item);
-    localStorage.setItem("watchlist", JSON.stringify(list));
-    alert("Saved to Watchlist!");
-  };
-}
 
-// Watchlist Page
-if (watchlistContainer) {
-  const items = JSON.parse(localStorage.getItem("watchlist") || "[]");
-  if (!items.length) watchlistContainer.innerHTML = "<p class='p-4 text-gray-500'>No saved titles.</p>";
-  items.forEach(item => {
-    const card = document.createElement("div");
-    card.className = "p-4 border rounded-lg bg-white max-w-[200px]";
-    card.innerHTML = `
-      <img src="${item.image}" class="rounded mb-2">
-      <h3 class="font-bold">${item.title} <span class="text-xs text-gray-500">(${item.type})</span></h3>
-      <button class="mt-2 px-3 py-1 bg-[#e92932] text-white rounded-full text-sm removeBtn">Remove</button>`;
-    card.querySelector(".removeBtn").onclick = () => {
-      const list = JSON.parse(localStorage.getItem("watchlist") || "[]").filter(x => x.title !== item.title);
-      localStorage.setItem("watchlist", JSON.stringify(list));
-      card.remove();
-    };
-    watchlistContainer.appendChild(card);
-  });
+  if (isWatchlist) {
+    card.querySelector(".removeBtn").onclick = () => removeFromWatchlist(item.title);
+  } else {
+    card.querySelector(".addWatch").onclick = () => saveToWatchlist(item);
+  }
 }
