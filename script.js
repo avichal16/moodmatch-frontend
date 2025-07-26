@@ -236,6 +236,3 @@ if (watchlistContainer) {
     watchlistContainer.appendChild(card);
   });
 }
-
-
-
