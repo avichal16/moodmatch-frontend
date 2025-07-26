@@ -15,7 +15,7 @@ let selectedTitle = null;
 let dynamicTags = [];
 let selectedTags = [];
 
-// Search Suggestions
+// --- Search Suggestions ---
 if (searchInput) {
   searchInput.addEventListener("input", () => {
     const query = searchInput.value.trim();
@@ -60,15 +60,14 @@ async function searchAll(query) {
       };
       searchResults.appendChild(li);
     });
-  } catch (e) {
-    console.error(e);
-  }
+  } catch (e) { console.error(e); }
 }
 
-// Build dynamic tag cloud
+// --- Build Tag Cloud with D3 ---
 async function buildTagCloud(item) {
-  tagContainer.innerHTML = "<p class='text-gray-500'>Loading tags...</p>";
+  tagContainer.innerHTML = "";
   dynamicTags = [];
+  selectedTags = [];
 
   try {
     if (item.type === "movie" || item.type === "tv") {
@@ -81,50 +80,77 @@ async function buildTagCloud(item) {
       const reviewText = (revData.results || []).map(r => r.content).join(" ");
 
       const words = [...keywords, ...reviewText.split(/\s+/)];
-      const filtered = words.filter(w => w.length > 4 && w.length < 15 && !/^(the|this|that|with|there|about|their|which)$/i.test(w));
+      const filtered = words.filter(w => w.length > 4 && w.length < 15);
       const counts = {};
       filtered.forEach(w => counts[w.toLowerCase()] = (counts[w.toLowerCase()] || 0) + 1);
-      dynamicTags = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 20).map(e => e[0]);
+      dynamicTags = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 20).map(([word, freq]) => ({ word, freq }));
     } else {
       const gbRes = await fetch(`https://www.googleapis.com/books/v1/volumes/${item.id}`);
       const gbData = await gbRes.json();
       const description = gbData.volumeInfo?.description || "";
       const categories = gbData.volumeInfo?.categories || [];
       const words = [...categories, ...description.split(/\s+/)];
-      const filtered = words.filter(w => w.length > 4 && w.length < 15);
       const counts = {};
-      filtered.forEach(w => counts[w.toLowerCase()] = (counts[w.toLowerCase()] || 0) + 1);
-      dynamicTags = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 20).map(e => e[0]);
+      words.forEach(w => counts[w.toLowerCase()] = (counts[w.toLowerCase()] || 0) + 1);
+      dynamicTags = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 20).map(([word, freq]) => ({ word, freq }));
     }
 
-    renderTagCloud();
+    renderTagCloudD3();
   } catch (e) {
     console.error(e);
     tagContainer.innerHTML = "<p class='text-gray-500'>No tags available.</p>";
   }
 }
 
-function renderTagCloud() {
+function renderTagCloudD3() {
   tagContainer.innerHTML = "";
-  selectedTags = [];
-  dynamicTags.forEach(tag => {
-    const span = document.createElement("span");
-    span.textContent = tag;
-    span.className = "px-4 py-2 m-1 bg-[#f3e7e8] rounded-full cursor-pointer hover:bg-[#994d51] hover:text-white transition";
-    span.onclick = () => {
-      if (selectedTags.includes(tag)) {
-        selectedTags = selectedTags.filter(t => t !== tag);
-        span.classList.remove("bg-[#994d51]", "text-white");
+  const width = tagContainer.clientWidth, height = tagContainer.clientHeight;
+
+  const svg = d3.select(tagContainer).append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+  const simulation = d3.forceSimulation(dynamicTags)
+    .force("charge", d3.forceManyBody().strength(-50))
+    .force("center", d3.forceCenter(width / 2, height / 2))
+    .force("collision", d3.forceCollide().radius(d => d.freq * 3 + 20))
+    .on("tick", ticked);
+
+  const nodes = svg.selectAll("g")
+    .data(dynamicTags)
+    .enter().append("g")
+    .attr("class", "tag-node")
+    .attr("cursor", "pointer")
+    .on("click", function (event, d) {
+      if (selectedTags.includes(d.word)) {
+        selectedTags = selectedTags.filter(t => t !== d.word);
+        d3.select(this).select("circle").attr("fill", "#f3e7e8");
       } else if (selectedTags.length < 5) {
-        selectedTags.push(tag);
-        span.classList.add("bg-[#994d51]", "text-white");
+        selectedTags.push(d.word);
+        d3.select(this).select("circle").attr("fill", "#e92932");
       }
-    };
-    tagContainer.appendChild(span);
-  });
+    });
+
+  nodes.append("circle")
+    .attr("r", d => d.freq * 2 + 20)
+    .attr("fill", "#f3e7e8")
+    .attr("stroke", "#994d51")
+    .attr("stroke-width", 1.5);
+
+  nodes.append("text")
+    .attr("text-anchor", "middle")
+    .attr("dy", ".35em")
+    .style("pointer-events", "none")
+    .style("font-size", d => `${10 + d.freq}px`)
+    .style("fill", "#1b0e0e")
+    .text(d => d.word);
+
+  function ticked() {
+    nodes.attr("transform", d => `translate(${d.x},${d.y})`);
+  }
 }
 
-// Recommendations
+// --- Recommendations ---
 const recommendBtn = document.getElementById("recommendButton");
 if (recommendBtn) recommendBtn.onclick = () => loadRecommendations();
 
@@ -140,16 +166,12 @@ async function loadRecommendations() {
     const res = await fetch(`${API_URL}?moodText=${encodeURIComponent(moodInput)}&tags=${encodeURIComponent(tagsForAI)}`);
     const data = await res.json();
 
-    // Movies
     const movieDetails = await Promise.all(data.movies.map(t => fetchTMDBDetails(t, "movie")));
-    const sortedMovies = movieDetails.filter(Boolean).sort((a,b) => b.popularity - a.popularity).slice(0,6);
-
-    // TV Series
     const tvDetails = await Promise.all(data.tv.map(t => fetchTMDBDetails(t, "tv")));
-    const sortedTV = tvDetails.filter(Boolean).sort((a,b) => b.popularity - a.popularity).slice(0,6);
-
-    // Books
     const bookDetails = await Promise.all(data.books.map(t => fetchBookDetails(t)));
+
+    const sortedMovies = movieDetails.filter(Boolean).sort((a,b)=>b.popularity-a.popularity).slice(0,6);
+    const sortedTV = tvDetails.filter(Boolean).sort((a,b)=>b.popularity-a.popularity).slice(0,6);
     const finalBooks = bookDetails.filter(Boolean).slice(0,6);
 
     movieList.innerHTML = "";
@@ -167,6 +189,7 @@ async function loadRecommendations() {
   }
 }
 
+// --- Helper Functions ---
 async function fetchTMDBDetails(title, type) {
   try {
     const res = await fetch(`https://api.themoviedb.org/3/search/${type}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(title)}`);
@@ -236,4 +259,5 @@ if (watchlistContainer) {
     watchlistContainer.appendChild(card);
   });
 }
+
 
