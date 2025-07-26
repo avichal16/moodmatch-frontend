@@ -8,6 +8,7 @@
   <link rel="stylesheet" as="style" onload="this.rel='stylesheet'"
     href="https://fonts.googleapis.com/css2?display=swap&family=Noto+Sans:wght@400;500;700;900&family=Plus+Jakarta+Sans:wght@400;500;700;800" />
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
   <script defer src="script.js"></script>
 </head>
 <body class="bg-[#fcf8f8]" style='font-family:"Plus Jakarta Sans","Noto Sans",sans-serif;'>
@@ -23,20 +24,20 @@
 
   <!-- Main -->
   <main class="flex flex-col items-center py-10 max-w-[960px] mx-auto">
-    <h2 class="text-[28px] font-bold text-center mb-6">Find Movies & Books by Mood</h2>
+    <h2 class="text-[28px] font-bold text-center mb-6">Find Movies, TV, & Books by Mood</h2>
 
     <!-- Search -->
     <div class="w-full px-4 relative">
-      <input id="searchInput" placeholder="Search for movies, series, or books"
+      <input id="searchInput" placeholder="Search for movies, TV, or books"
         class="w-full p-3 rounded-xl bg-[#f3e7e8] text-[#1b0e0e] placeholder-[#994d51] focus:outline-none" />
       <ul id="searchResults"
         class="absolute bg-white rounded-xl border mt-1 w-full shadow max-h-64 overflow-y-auto"></ul>
     </div>
     <ul id="selectedList" class="mt-5 flex gap-3 flex-wrap"></ul>
 
-    <!-- Tags -->
-    <h3 class="text-lg font-bold mt-8">Select up to 5 Tags</h3>
-    <div id="tagOptions" class="flex gap-3 flex-wrap mt-3 px-4"></div>
+    <!-- Dynamic Tag Graph -->
+    <h3 class="text-lg font-bold mt-8">Pick up to 5 Tags</h3>
+    <div id="tagOptions" class="w-full mt-5 h-[400px] bg-white border rounded-lg relative"></div>
 
     <!-- Mood -->
     <h3 class="text-lg font-bold mt-8">How did it make you feel?</h3>
@@ -52,8 +53,10 @@
     <section class="mt-10 w-full">
       <h2 class="text-[24px] font-bold mb-4 px-4">Movies You Might Like</h2>
       <div id="movieList" class="flex flex-wrap gap-4 px-4"></div>
+
       <h2 class="text-[24px] font-bold mb-4 mt-8 px-4">TV Series You Might Like</h2>
       <div id="tvList" class="flex flex-wrap gap-4 px-4"></div>
+
       <h2 class="text-[24px] font-bold mb-4 mt-8 px-4">Books You Might Like</h2>
       <div id="bookList" class="flex flex-wrap gap-4 px-4"></div>
     </section>
