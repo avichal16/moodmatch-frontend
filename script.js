@@ -7,6 +7,7 @@ const selectedList = document.getElementById("selectedList");
 const tagContainer = document.getElementById("tagOptions");
 const moodText = document.getElementById("moodText");
 const movieList = document.getElementById("movieList");
+const tvList = document.getElementById("tvList");
 const bookList = document.getElementById("bookList");
 const watchlistContainer = document.getElementById("watchlistContainer");
 
@@ -64,7 +65,7 @@ async function searchAll(query) {
   }
 }
 
-// Build dynamic tag cloud from reviews & keywords
+// Build dynamic tag cloud
 async function buildTagCloud(item) {
   tagContainer.innerHTML = "<p class='text-gray-500'>Loading tags...</p>";
   dynamicTags = [];
@@ -123,12 +124,13 @@ function renderTagCloud() {
   });
 }
 
-// Generate Recommendations
+// Recommendations
 const recommendBtn = document.getElementById("recommendButton");
 if (recommendBtn) recommendBtn.onclick = () => loadRecommendations();
 
 async function loadRecommendations() {
   movieList.innerHTML = "<p class='p-4 text-gray-500'>Loading recommendations...</p>";
+  tvList.innerHTML = "";
   bookList.innerHTML = "";
 
   const tagsForAI = selectedTags.join(", ");
@@ -138,35 +140,46 @@ async function loadRecommendations() {
     const res = await fetch(`${API_URL}?moodText=${encodeURIComponent(moodInput)}&tags=${encodeURIComponent(tagsForAI)}`);
     const data = await res.json();
 
-    const movieDetails = await Promise.all(data.movies.map(t => fetchMovieDetails(t)));
-    const sortedMovies = movieDetails.filter(Boolean).sort((a, b) => b.popularity - a.popularity).slice(0, 6);
+    // Movies
+    const movieDetails = await Promise.all(data.movies.map(t => fetchTMDBDetails(t, "movie")));
+    const sortedMovies = movieDetails.filter(Boolean).sort((a,b) => b.popularity - a.popularity).slice(0,6);
 
+    // TV Series
+    const tvDetails = await Promise.all(data.tv.map(t => fetchTMDBDetails(t, "tv")));
+    const sortedTV = tvDetails.filter(Boolean).sort((a,b) => b.popularity - a.popularity).slice(0,6);
+
+    // Books
     const bookDetails = await Promise.all(data.books.map(t => fetchBookDetails(t)));
-    const finalBooks = bookDetails.filter(Boolean).slice(0, 6);
+    const finalBooks = bookDetails.filter(Boolean).slice(0,6);
 
     movieList.innerHTML = "";
     sortedMovies.forEach(m => renderCard(m, movieList));
+
+    tvList.innerHTML = "";
+    sortedTV.forEach(tv => renderCard(tv, tvList));
+
     bookList.innerHTML = "";
     finalBooks.forEach(b => renderCard(b, bookList));
+
   } catch (e) {
     console.error(e);
     movieList.innerHTML = "<p class='p-4 text-gray-500'>Could not load recommendations.</p>";
   }
 }
 
-async function fetchMovieDetails(title) {
+async function fetchTMDBDetails(title, type) {
   try {
-    const res = await fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(title)}`);
+    const res = await fetch(`https://api.themoviedb.org/3/search/${type}?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(title)}`);
     const data = await res.json();
-    const movie = data.results?.[0];
-    if (!movie) return null;
+    const item = data.results?.[0];
+    if (!item) return null;
     return {
-      id: movie.id,
-      title: movie.title,
-      image: `https://image.tmdb.org/t/p/w200${movie.poster_path}`,
-      desc: movie.overview,
-      popularity: movie.popularity || 0,
-      type: "movie"
+      id: item.id,
+      title: type === "movie" ? item.title : item.name,
+      image: item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : "",
+      desc: item.overview || "",
+      popularity: item.popularity || 0,
+      type
     };
   } catch { return null; }
 }
@@ -204,7 +217,7 @@ function renderCard(item, container) {
   };
 }
 
-// Watchlist Page Logic
+// Watchlist Page
 if (watchlistContainer) {
   const items = JSON.parse(localStorage.getItem("watchlist") || "[]");
   if (!items.length) watchlistContainer.innerHTML = "<p class='p-4 text-gray-500'>No saved titles.</p>";
