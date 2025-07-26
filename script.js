@@ -1,3 +1,80 @@
+
+// HIGHLIGHTED: Firebase Initialization (with your config)
+const firebaseConfig = {
+  apiKey: "AIzaSyBpjHeCWkzMYDU-F3vKyeGL6BWR-VTptu0",
+  authDomain: "moodmatch-c44c3.firebaseapp.com",
+  projectId: "moodmatch-c44c3",
+  storageBucket: "moodmatch-c44c3.firebasestorage.app",
+  messagingSenderId: "452869601500",
+  appId: "1:452869601500:web:918923d855fb04f4d95c19"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+let currentUser = null;
+
+// HIGHLIGHTED: Auth button logic (Google Sign-In)
+const loginBtn = document.getElementById("loginButton");
+const logoutBtn = document.getElementById("logoutButton");
+
+if (loginBtn) {
+  loginBtn.addEventListener("click", () => {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider);
+  });
+}
+
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", () => auth.signOut());
+}
+
+auth.onAuthStateChanged(user => {
+  currentUser = user;
+  if (user) {
+    loginBtn?.classList.add("hidden");
+    logoutBtn?.classList.remove("hidden");
+    loadWatchlist();
+  } else {
+    loginBtn?.classList.remove("hidden");
+    logoutBtn?.classList.add("hidden");
+  }
+});
+
+// HIGHLIGHTED: Watchlist Firestore Functions
+async function saveToWatchlist(item) {
+  if (!currentUser) return alert("Please log in to save to your watchlist.");
+  const ref = db.collection("watchlists").doc(currentUser.uid);
+  const doc = await ref.get();
+  const list = doc.exists ? doc.data().items || [] : [];
+  list.push(item);
+  await ref.set({ items: list });
+  alert("Saved to Watchlist!");
+}
+
+async function loadWatchlist() {
+  const container = document.getElementById("watchlistContainer");
+  if (!container || !currentUser) return;
+  const ref = db.collection("watchlists").doc(currentUser.uid);
+  const doc = await ref.get();
+  const list = doc.exists ? doc.data().items || [] : [];
+  container.innerHTML = "";
+  if (!list.length) {
+    container.innerHTML = "<p class='p-4 text-gray-500'>No saved titles.</p>";
+  }
+  list.forEach(item => renderCard(item, container, true));
+}
+
+async function removeFromWatchlist(title) {
+  const ref = db.collection("watchlists").doc(currentUser.uid);
+  const doc = await ref.get();
+  if (!doc.exists) return;
+  const list = doc.data().items.filter(x => x.title !== title);
+  await ref.set({ items: list });
+  loadWatchlist();
+}
+
+
 const API_URL = "https://moodmatch-api-4vdp.vercel.app/api/mood"; // Replace with your actual Vercel API URL
 const TMDB_API_KEY = "c5bb9a766bdc90fcc8f7293f6cd9c26a";
 
