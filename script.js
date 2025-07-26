@@ -20,7 +20,14 @@ const logoutBtn = document.getElementById("logoutButton");
 if (loginBtn) {
   loginBtn.addEventListener("click", () => {
     const provider = new firebase.auth.GoogleAuthProvider();
-    auth.signInWithPopup(provider).catch(err => console.error("Login error:", err));
+    auth.signInWithPopup(provider).catch(err => {
+      console.error("Login error with popup:", err);
+      // Fallback for browsers that block popups or third‑party cookies (e.g. Brave)
+      auth.signInWithRedirect(provider).catch(err2 => {
+        console.error("Login redirect error:", err2);
+        alert("Login failed. Please enable pop‑ups or disable tracking protection.");
+      });
+    });
   });
 }
 
