@@ -63,7 +63,7 @@ async function removeFromWatchlist(title) {
 }
 
 // Recommendation Fetch
-const API_URL = "https://<your-vercel-project>.vercel.app/api/mood";
+const API_URL = "https://moodmatch-api-tz3s.vercel.app/api/mood";
 const TMDB_API_KEY = "c5bb9a766bdc90fcc8f7293f6cd9c26a";
 
 const recommendBtn = document.getElementById("recommendButton");
