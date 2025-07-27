@@ -12,6 +12,21 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script defer src="script.js"></script>
+  <style>
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #e92932;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
 </head>
 <body class="bg-[#fcf8f8]" style='font-family:"Plus Jakarta Sans","Noto Sans",sans-serif;'>
 
@@ -37,6 +52,12 @@
       <input id="referenceSearch" placeholder="Search for a movie, TV show, or book"
         class="p-3 rounded-xl bg-[#f3e7e8] text-[#1b0e0e] placeholder-[#994d51]">
       <ul id="referenceResults" class="bg-white mt-2 border rounded-lg hidden"></ul>
+
+      <!-- Selected Reference Preview -->
+      <div id="selectedReference" class="flex items-center gap-3 mt-2 hidden">
+        <img id="selectedRefImage" src="" alt="Preview" class="w-14 h-20 object-cover rounded" />
+        <span id="selectedRefTitle" class="font-medium text-[#1b0e0e]"></span>
+      </div>
     </div>
 
     <!-- Mood Controls -->
@@ -45,6 +66,7 @@
       <label>Positivity Level: <input id="positivitySlider" type="range" min="0" max="10" value="5" class="w-full"></label>
     </div>
 
+    <!-- Emoji Picker -->
     <div class="flex gap-4 my-6" id="emojiPicker">
       <button class="emoji-btn text-3xl">😌</button>
       <button class="emoji-btn text-3xl">😭</button>
@@ -53,9 +75,11 @@
       <button class="emoji-btn text-3xl">😴</button>
     </div>
 
+    <!-- Mood Text -->
     <textarea id="moodText" placeholder="Describe what you want to feel..." 
       class="w-full max-w-[600px] p-3 rounded-xl bg-[#f3e7e8] text-[#1b0e0e] placeholder-[#994d51]"></textarea>
 
+    <!-- Session Toggles -->
     <div class="flex flex-wrap gap-4 mt-6">
       <label><input type="checkbox" id="toggleAlone"> Alone</label>
       <label><input type="checkbox" id="toggleFriends"> With Friends</label>
@@ -63,12 +87,32 @@
       <label><input type="checkbox" id="toggleLong"> Long Session (2+ hrs)</label>
     </div>
 
+    <!-- Content Style Dropdown -->
+    <div class="flex flex-col w-full max-w-[600px] mt-4">
+      <label class="font-bold mb-1">Preferred Content Style</label>
+      <select id="criteriaSelect" class="p-3 rounded-xl bg-[#f3e7e8] text-[#1b0e0e]">
+        <option value="trending">Trending</option>
+        <option value="popular">Popular</option>
+        <option value="classic">Classic</option>
+        <option value="niche">Niche</option>
+        <option value="foreign">Foreign</option>
+        <option value="critically acclaimed">Critically Acclaimed</option>
+        <option value="hidden gems">Hidden Gems</option>
+      </select>
+    </div>
+
+    <!-- Get Recommendations Button -->
     <button id="recommendButton" 
       class="mt-6 px-6 py-3 bg-[#e92932] text-white rounded-full font-bold">
       Get Recommendations
     </button>
 
-    <!-- Results -->
+    <!-- Loading Spinner -->
+    <div id="loadingSpinner" class="hidden mt-8">
+      <div class="spinner"></div>
+    </div>
+
+    <!-- Results Section -->
     <section class="mt-10 w-full">
       <h2 class="text-[24px] font-bold mb-4 px-4">Movies</h2>
       <div id="movieList" class="flex flex-wrap gap-4 px-4"></div>
