@@ -12,7 +12,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 let currentUser = null;
-const API_BASE = "https://moodmatch-api-e4o7.vercel.app";
+const API_BASE = "https://moodmatch-api-avichals-projects-c02944d8.vercel.app";
 
 // Auth state
 const loginBtn = document.getElementById("loginButton");
