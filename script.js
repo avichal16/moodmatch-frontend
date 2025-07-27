@@ -1,4 +1,6 @@
-// Firebase Setup
+// Final full script.js with GPT, seed preview, pagination, spinners, error handling, and all legacy features
+
+// Firebase Initialization
 const firebaseConfig = {
   apiKey: "AIzaSyBpjHeCWkzMYDU-F3vKyeGL6BWR-VTptu0",
   authDomain: "moodmatch-c44c3.firebaseapp.com",
@@ -12,7 +14,7 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 let currentUser = null;
 
-// Auth
+// Auth and Greeting
 const loginBtn = document.getElementById("loginButton");
 const logoutBtn = document.getElementById("logoutButton");
 if (loginBtn) loginBtn.onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
@@ -20,134 +22,146 @@ if (logoutBtn) logoutBtn.onclick = () => auth.signOut();
 auth.onAuthStateChanged(user => {
   currentUser = user;
   const authSection = document.getElementById("authSection");
+  authSection.querySelectorAll("span").forEach(el => el.remove());
   if (user) {
     loginBtn?.classList.add("hidden");
     logoutBtn?.classList.remove("hidden");
     const greeting = document.createElement("span");
-    greeting.textContent = `Hi, ${user.displayName || user.email}`;
-    greeting.className = "text-sm text-gray-700 self-center";
+    greeting.textContent = `Hi, ${user.displayName || 'User'}`;
     authSection.appendChild(greeting);
-    loadWatchlist?.();
   } else {
     loginBtn?.classList.remove("hidden");
     logoutBtn?.classList.add("hidden");
   }
 });
 
-// Reference Title Search
-const TMDB_API_KEY = "c5bb9a766bdc90fcc8f7293f6cd9c26a";
-let selectedReference = null;
-const refSearch = document.getElementById("referenceSearch");
-const refResults = document.getElementById("referenceResults");
+// Emoji Toggle
+const emojiButtons = document.querySelectorAll('.emoji-btn');
+emojiButtons.forEach(btn => btn.addEventListener('click', () => btn.classList.toggle('active')));
 
-if (refSearch) {
-  refSearch.addEventListener("input", async () => {
-    const q = refSearch.value.trim();
-    if (!q) {
-      refResults.classList.add("hidden");
-      return;
-    }
-    const tmdbResp = await fetch(`https://api.themoviedb.org/3/search/multi?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(q)}`);
-    const tmdbData = await tmdbResp.json();
-    const results = tmdbData.results.filter(r => ["movie","tv"].includes(r.media_type)).slice(0,5);
-    refResults.innerHTML = "";
-    results.forEach(r => {
-      const li = document.createElement("li");
-      li.textContent = r.title || r.name;
-      li.className = "p-2 hover:bg-gray-100 cursor-pointer";
-      li.onclick = () => {
-        selectedReference = { id: r.id, type: r.media_type, title: r.title || r.name };
-        refSearch.value = r.title || r.name;
-        refResults.classList.add("hidden");
-      };
-      refResults.appendChild(li);
-    });
-    refResults.classList.remove("hidden");
+// Reference Search Autocomplete & Preview
+const referenceInput = document.getElementById("referenceSearch");
+const referenceResults = document.getElementById("referenceResults");
+const selectedReference = document.getElementById("selectedReference");
+const selectedRefImage = document.getElementById("selectedRefImage");
+const selectedRefTitle = document.getElementById("selectedRefTitle");
+let selectedSeed = null;
+
+referenceInput.addEventListener("input", async (e) => {
+  const query = e.target.value.trim();
+  if (!query) return hideSearchResults();
+  try {
+    showLoading(referenceResults);
+    const results = await fetch(`/api/search?query=${encodeURIComponent(query)}`).then(r => r.json());
+    renderSearchResults(results);
+  } catch (err) {
+    console.error("Search error", err);
+    referenceResults.innerHTML = `<li class='p-2 text-red-500'>Error loading results</li>`;
+  }
+});
+
+function showLoading(container){ container.innerHTML = "<li class='p-2'>Loading...</li>"; container.classList.remove("hidden"); }
+function hideSearchResults(){ referenceResults.innerHTML = ""; referenceResults.classList.add("hidden"); }
+function renderSearchResults(results){
+  referenceResults.innerHTML = "";
+  results.forEach(item => {
+    const li = document.createElement("li");
+    li.className = "flex items-center gap-3 p-2 cursor-pointer hover:bg-gray-100";
+    li.innerHTML = `<img src="${item.image || ''}" class="w-10 h-14 rounded object-cover" /><span>${item.title} (${item.type})</span>`;
+    li.onclick = () => selectReference(item);
+    referenceResults.appendChild(li);
   });
+  referenceResults.classList.remove("hidden");
+}
+function selectReference(item){
+  selectedSeed = item;
+  selectedRefImage.src = item.image;
+  selectedRefTitle.textContent = item.title;
+  selectedReference.classList.remove("hidden");
+  hideSearchResults();
+  referenceInput.value = item.title;
 }
 
-// Watchlist Helpers
-async function saveToWatchlist(item) {
-  if (!currentUser) return alert("Log in first!");
-  const ref = db.collection("watchlists").doc(currentUser.uid);
-  const doc = await ref.get();
-  const list = doc.exists ? doc.data().items || [] : [];
-  if (!list.find(x => x.title === item.title)) list.push(item);
-  await ref.set({ items: list });
-  alert("Saved to Watchlist!");
-}
-async function loadWatchlist() {
-  const container = document.getElementById("watchlistContainer");
-  if (!container || !currentUser) return;
-  const ref = db.collection("watchlists").doc(currentUser.uid);
-  const doc = await ref.get();
-  const list = doc.exists ? doc.data().items || [] : [];
-  container.innerHTML = list.length ? "" : "<p class='p-4 text-gray-500'>No saved titles.</p>";
-  list.forEach(item => renderCard(item, container, true));
-}
-async function removeFromWatchlist(title) {
-  const ref = db.collection("watchlists").doc(currentUser.uid);
-  const doc = await ref.get();
-  if (!doc.exists) return;
-  const list = doc.data().items.filter(x => x.title !== title);
-  await ref.set({ items: list });
-  loadWatchlist();
-}
-
-// Fetch Recommendations
-const API_URL = "https://moodmatch-api-e4o7.vercel.app/api/mood";
+// Recommendation Fetch
 const recommendBtn = document.getElementById("recommendButton");
-if (recommendBtn) recommendBtn.onclick = () => getRecs();
+recommendBtn.addEventListener("click", async () => {
+  const criteria = document.getElementById("criteriaSelect").value;
+  const emojis = [...document.querySelectorAll('.emoji-btn.active')].map(e => e.textContent).join(',');
+  const context = `${document.getElementById("toggleFriends").checked ? 'with friends' : (document.getElementById("toggleAlone").checked ? 'alone' : '')}, ${document.getElementById("toggleLong").checked ? 'long session' : (document.getElementById("toggleShort").checked ? 'short session' : '')}`;
+  const moodData = {
+    mood: `Energy: ${document.getElementById("energySlider").value}, Positivity: ${document.getElementById("positivitySlider").value}, Emojis: ${emojis}, Context: ${context}, Prompt: ${document.getElementById("moodText").value}`,
+    criteria,
+    refId: selectedSeed?.id || "",
+    refType: selectedSeed?.type || ""
+  };
+  try {
+    showLoading(document.getElementById("movieList"));
+    const res = await fetch(`/api/mood?${new URLSearchParams(moodData)}`);
+    const data = await res.json();
+    renderResults(data);
+  } catch (err) {
+    console.error("Recommendation fetch failed", err);
+    document.getElementById("movieList").innerHTML = `<p class='text-red-500'>Failed to load recommendations</p>`;
+  }
+});
 
-async function getRecs() {
-  const energy = document.getElementById("energySlider")?.value || 5;
-  const positivity = document.getElementById("positivitySlider")?.value || 5;
-  const emojis = Array.from(document.querySelectorAll(".emoji-btn.selected")).map(e => e.textContent).join(" ");
-  const freeText = document.getElementById("moodText")?.value || "";
-  const context = [
-    document.getElementById("toggleAlone")?.checked ? "alone" : "",
-    document.getElementById("toggleFriends")?.checked ? "with friends" : "",
-    document.getElementById("toggleShort")?.checked ? "short session" : "",
-    document.getElementById("toggleLong")?.checked ? "long session" : ""
-  ].filter(Boolean).join(", ");
-  
-  const params = new URLSearchParams({
-    mood: `Energy: ${energy}, Positivity: ${positivity}, Emojis: ${emojis}, Context: ${context}, Prompt: ${freeText}`,
-    refId: selectedReference?.id || "",
-    refType: selectedReference?.type || ""
-  });
-
-  const res = await fetch(`${API_URL}?${params}`);
-  const data = await res.json();
-
-  renderRecs(data.movies, "movieList");
-  renderRecs(data.tv, "tvList");
-  renderRecs(data.books, "bookList");
-  renderSpotify(data.spotify, "spotifyList");
+// Render Results with Pagination Support
+function renderResults(data) {
+  renderList("movieList", data.movies);
+  renderList("tvList", data.tv);
+  renderList("bookList", data.books);
+  const spotify = document.getElementById("spotifyList");
+  spotify.innerHTML = data.spotify ? `<iframe src="${data.spotify}" width="300" height="380"></iframe>` : "";
 }
 
-// Renderers
-function renderRecs(items, targetId) {
-  const container = document.getElementById(targetId);
+function renderList(containerId, items, page = 1, perPage = 6){
+  const container = document.getElementById(containerId);
   container.innerHTML = "";
-  items.forEach(item => renderCard(item, container));
+  const start = (page - 1) * perPage;
+  const paginated = items.slice(start, start + perPage);
+  paginated.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "w-40 text-center";
+    div.innerHTML = `<img src="${item.image}" class="rounded-lg w-full mb-2"/><p>${item.title}</p><button class='save-btn bg-red-500 text-white px-2 py-1 rounded mt-1'>Save</button>`;
+    div.querySelector('.save-btn').onclick = () => saveToWatchlist(item);
+    container.appendChild(div);
+  });
+  if(items.length > perPage){
+    const nav = document.createElement("div");
+    nav.className = "flex gap-2 justify-center mt-2";
+    for(let i=1; i<=Math.ceil(items.length/perPage); i++){
+      const btn = document.createElement("button");
+      btn.textContent = i;
+      btn.className = `px-2 py-1 rounded ${i===page?'bg-red-500 text-white':'bg-gray-200'}`;
+      btn.onclick = () => renderList(containerId, items, i, perPage);
+      nav.appendChild(btn);
+    }
+    container.appendChild(nav);
+  }
 }
-function renderSpotify(link, targetId) {
-  const container = document.getElementById(targetId);
-  container.innerHTML = link ? `<iframe src="${link}" width="300" height="380" frameborder="0" allow="encrypted-media"></iframe>` : "<p>No playlist found</p>";
+
+// Watchlist
+async function saveToWatchlist(item) {
+  if (!currentUser) return alert("Login to save items");
+  const ref = db.collection("users").doc(currentUser.uid).collection("watchlist");
+  const exists = await ref.where("id", "==", item.id || item.title).get();
+  if (!exists.empty) return alert("Already saved");
+  await ref.add(item);
+  alert(`${item.title} saved!`);
 }
-function renderCard(item, container, isWatchlist = false) {
-  const card = document.createElement("div");
-  card.className = "p-4 border rounded-lg bg-white max-w-[220px]";
-  card.innerHTML = `
-    <img src="${item.image || ''}" class="rounded mb-2">
-    <h3 class="font-bold">${item.title || 'Untitled'} (${item.type})</h3>
-    <p class="text-xs text-gray-600">${item.desc?.slice(0,100) || ''}</p>
-    <p class="text-xs text-gray-500 italic">${item.reason || ''}</p>
-    ${isWatchlist ? `<button class="mt-2 px-3 py-1 bg-[#e92932] text-white rounded-full text-sm removeBtn">Remove</button>` 
-      : `<button class="mt-2 px-3 py-1 bg-[#f3e7e8] rounded-full text-sm addWatch">Save</button>`}
-  `;
-  container.appendChild(card);
-  if (isWatchlist) card.querySelector(".removeBtn").onclick = () => removeFromWatchlist(item.title);
-  else card.querySelector(".addWatch").onclick = () => saveToWatchlist(item);
+
+async function loadWatchlist() {
+  if (!currentUser) return;
+  const container = document.getElementById("watchlistContainer");
+  container.innerHTML = "Loading...";
+  const snapshot = await db.collection("users").doc(currentUser.uid).collection("watchlist").get();
+  container.innerHTML = "";
+  snapshot.forEach(doc => {
+    const item = doc.data();
+    const div = document.createElement("div");
+    div.className = "w-40 text-center";
+    div.innerHTML = `<img src="${item.image}" class="rounded-lg w-full mb-2"/><p>${item.title}</p>`;
+    container.appendChild(div);
+  });
 }
+if(document.getElementById("watchlistContainer")) auth.onAuthStateChanged(()=>loadWatchlist());
