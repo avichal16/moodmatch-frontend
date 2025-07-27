@@ -12,7 +12,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 let currentUser = null;
-const API_BASE = "https://moodmatch-api-avichals-projects-c02944d8.vercel.app";
+const API_BASE = "https://moodmatch-api-e4o7.vercel.app/";
 const TMDB_KEY = "c5bb9a766bdc90fcc8f7293f6cd9c26a"; // Add your TMDB API key here
 const GOOGLE_BOOKS_URL = "https://www.googleapis.com/books/v1/volumes";
 
