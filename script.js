@@ -1,4 +1,4 @@
-// Final script.js with spinner, emoji highlighting, GPT, search, pagination, Firebase, and watchlist
+// Final script.js with frontend-only search, spinner, emoji highlight, GPT recommendations, pagination, Firebase, and watchlist
 
 const firebaseConfig = {
   apiKey: "AIzaSyBpjHeCWkzMYDU-F3vKyeGL6BWR-VTptu0",
@@ -13,8 +13,10 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 let currentUser = null;
 const API_BASE = "https://moodmatch-api-avichals-projects-c02944d8.vercel.app";
+const TMDB_KEY = "YOUR_TMDB_API_KEY"; // Add your TMDB API key here
+const GOOGLE_BOOKS_URL = "https://www.googleapis.com/books/v1/volumes";
 
-// Auth state
+// Auth
 const loginBtn = document.getElementById("loginButton");
 const logoutBtn = document.getElementById("logoutButton");
 if (loginBtn) loginBtn.onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
@@ -35,11 +37,11 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-// Spinner
+// Spinner controls
 function showSpinner() { document.getElementById("loadingSpinner").classList.remove("hidden"); }
 function hideSpinner() { document.getElementById("loadingSpinner").classList.add("hidden"); }
 
-// Emoji toggle highlight
+// Emoji highlight
 const emojiButtons = document.querySelectorAll('.emoji-btn');
 emojiButtons.forEach(btn => {
   btn.addEventListener('click', () => {
@@ -52,7 +54,26 @@ emojiButtons.forEach(btn => {
   });
 });
 
-// Reference Search with spinner
+// Frontend-only search logic (TMDB + Books)
+async function fetchSearchResultsFrontend(query) {
+  try {
+    const movieReq = fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}`).then(r=>r.json());
+    const tvReq = fetch(`https://api.themoviedb.org/3/search/tv?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}`).then(r=>r.json());
+    const bookReq = fetch(`${GOOGLE_BOOKS_URL}?q=${encodeURIComponent(query)}`).then(r=>r.json());
+
+    const [moviesRes, tvRes, booksRes] = await Promise.all([movieReq, tvReq, bookReq]);
+
+    const movies = (moviesRes.results || []).map(m => ({ id: m.id, title: m.title, type: "movie", image: m.poster_path ? `https://image.tmdb.org/t/p/w200${m.poster_path}` : "" }));
+    const tv = (tvRes.results || []).map(t => ({ id: t.id, title: t.name, type: "tv", image: t.poster_path ? `https://image.tmdb.org/t/p/w200${t.poster_path}` : "" }));
+    const books = (booksRes.items || []).map(b => ({ id: b.id, title: b.volumeInfo?.title, type: "book", image: b.volumeInfo?.imageLinks?.thumbnail || "" }));
+    return [...movies.slice(0,5), ...tv.slice(0,5), ...books.slice(0,5)];
+  } catch (e) {
+    console.error("Frontend search failed", e);
+    return [];
+  }
+}
+
+// Reference search with spinner
 const referenceInput = document.getElementById("referenceSearch");
 const referenceResults = document.getElementById("referenceResults");
 const selectedReference = document.getElementById("selectedReference");
@@ -63,16 +84,10 @@ let selectedSeed = null;
 referenceInput.addEventListener("input", async (e) => {
   const query = e.target.value.trim();
   if (!query) { referenceResults.innerHTML = ""; referenceResults.classList.add("hidden"); return; }
-  try {
-    showSpinner();
-    const results = await fetch(`${API_BASE}/api/search?query=${encodeURIComponent(query)}`).then(r => r.json());
-    hideSpinner();
-    renderSearchResults(results);
-  } catch (err) {
-    hideSpinner();
-    console.error("Search error", err);
-    referenceResults.innerHTML = `<li class='p-2 text-red-500'>Error loading results</li>`;
-  }
+  showSpinner();
+  const results = await fetchSearchResultsFrontend(query);
+  hideSpinner();
+  renderSearchResults(results);
 });
 
 function renderSearchResults(results) {
@@ -94,7 +109,7 @@ function renderSearchResults(results) {
   referenceResults.classList.remove("hidden");
 }
 
-// Fetch Recommendations with spinner
+// Fetch recommendations with spinner
 const recommendBtn = document.getElementById("recommendButton");
 recommendBtn.addEventListener("click", async () => {
   const criteria = document.getElementById("criteriaSelect").value;
@@ -107,14 +122,14 @@ recommendBtn.addEventListener("click", async () => {
     const data = await res.json();
     hideSpinner();
     renderResults(data);
-  } catch (err) {
+  } catch (e) {
     hideSpinner();
-    console.error("Recommendation fetch failed", err);
+    console.error("Recommendation fetch failed", e);
     document.getElementById("movieList").innerHTML = `<p class='text-red-500'>Failed to load recommendations</p>`;
   }
 });
 
-// Render Results with pagination and watchlist
+// Render results with pagination and watchlist
 function renderResults(data) {
   renderList("movieList", data.movies);
   renderList("tvList", data.tv);
@@ -123,11 +138,11 @@ function renderResults(data) {
   spotify.innerHTML = data.spotify ? `<iframe src="${data.spotify}" width="300" height="380"></iframe>` : "";
 }
 
-function renderList(containerId, items, page = 1, perPage = 6) {
+function renderList(containerId, items, page=1, perPage=6) {
   const container = document.getElementById(containerId);
   container.innerHTML = "";
-  const start = (page - 1) * perPage;
-  const pageItems = items.slice(start, start + perPage);
+  const start = (page-1)*perPage;
+  const pageItems = items.slice(start,start+perPage);
   pageItems.forEach(item => {
     const div = document.createElement("div");
     div.className = "w-40 text-center";
@@ -138,10 +153,10 @@ function renderList(containerId, items, page = 1, perPage = 6) {
   if (items.length > perPage) {
     const nav = document.createElement("div");
     nav.className = "flex gap-2 justify-center mt-2";
-    for (let i = 1; i <= Math.ceil(items.length / perPage); i++) {
+    for (let i=1;i<=Math.ceil(items.length/perPage);i++) {
       const btn = document.createElement("button");
       btn.textContent = i;
-      btn.className = `px-2 py-1 rounded ${i === page ? 'bg-red-500 text-white' : 'bg-gray-200'}`;
+      btn.className = `px-2 py-1 rounded ${i===page?'bg-red-500 text-white':'bg-gray-200'}`;
       btn.onclick = () => renderList(containerId, items, i, perPage);
       nav.appendChild(btn);
     }
