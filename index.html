@@ -28,21 +28,23 @@
     </div>
   </header>
 
-  <!-- Mood Input Section -->
+  <!-- Mood + Reference Input -->
   <main class="flex flex-col items-center py-8 max-w-[960px] mx-auto">
-    <h2 class="text-[28px] font-bold text-center mb-6">What's Your Mood?</h2>
+    <h2 class="text-[28px] font-bold text-center mb-6">What did you enjoy recently?</h2>
 
-    <!-- Sliders -->
-    <div class="flex flex-col gap-6 w-full max-w-[600px]">
-      <label class="flex flex-col">
-        Energy Level: <input id="energySlider" type="range" min="0" max="10" value="5" class="w-full">
-      </label>
-      <label class="flex flex-col">
-        Positivity Level: <input id="positivitySlider" type="range" min="0" max="10" value="5" class="w-full">
-      </label>
+    <!-- Reference Search -->
+    <div class="flex flex-col w-full max-w-[600px] mb-6">
+      <input id="referenceSearch" placeholder="Search for a movie, TV show, or book"
+        class="p-3 rounded-xl bg-[#f3e7e8] text-[#1b0e0e] placeholder-[#994d51]">
+      <ul id="referenceResults" class="bg-white mt-2 border rounded-lg hidden"></ul>
     </div>
 
-    <!-- Emoji Picker -->
+    <!-- Mood Controls -->
+    <div class="flex flex-col gap-6 w-full max-w-[600px]">
+      <label>Energy Level: <input id="energySlider" type="range" min="0" max="10" value="5" class="w-full"></label>
+      <label>Positivity Level: <input id="positivitySlider" type="range" min="0" max="10" value="5" class="w-full"></label>
+    </div>
+
     <div class="flex gap-4 my-6" id="emojiPicker">
       <button class="emoji-btn text-3xl">😌</button>
       <button class="emoji-btn text-3xl">😭</button>
@@ -51,21 +53,16 @@
       <button class="emoji-btn text-3xl">😴</button>
     </div>
 
-    <!-- Free Text -->
     <textarea id="moodText" placeholder="Describe what you want to feel..." 
       class="w-full max-w-[600px] p-3 rounded-xl bg-[#f3e7e8] text-[#1b0e0e] placeholder-[#994d51]"></textarea>
 
-    <!-- State Toggles -->
     <div class="flex flex-wrap gap-4 mt-6">
       <label><input type="checkbox" id="toggleAlone"> Alone</label>
       <label><input type="checkbox" id="toggleFriends"> With Friends</label>
       <label><input type="checkbox" id="toggleShort"> Short Session (30-60 min)</label>
       <label><input type="checkbox" id="toggleLong"> Long Session (2+ hrs)</label>
-      <label><input type="checkbox" id="toggleLowEnergy"> Low Energy</label>
-      <label><input type="checkbox" id="toggleHighEnergy"> High Energy</label>
     </div>
 
-    <!-- Get Recommendations -->
     <button id="recommendButton" 
       class="mt-6 px-6 py-3 bg-[#e92932] text-white rounded-full font-bold">
       Get Recommendations
