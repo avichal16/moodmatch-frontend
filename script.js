@@ -14,6 +14,9 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 let currentUser = null;
 
+// API Base URL
+const API_BASE = "https://moodmatch-api-e4o7.vercel.app";
+
 // Auth and Greeting
 const loginBtn = document.getElementById("loginButton");
 const logoutBtn = document.getElementById("logoutButton");
@@ -52,7 +55,7 @@ referenceInput.addEventListener("input", async (e) => {
   if (!query) return hideSearchResults();
   try {
     showLoading(referenceResults);
-    const results = await fetch(`/api/search?query=${encodeURIComponent(query)}`).then(r => r.json());
+    const results = await fetch(`${API_BASE}/api/search?query=${encodeURIComponent(query)}`).then(r => r.json());
     renderSearchResults(results);
   } catch (err) {
     console.error("Search error", err);
@@ -96,7 +99,7 @@ recommendBtn.addEventListener("click", async () => {
   };
   try {
     showLoading(document.getElementById("movieList"));
-    const res = await fetch(`/api/mood?${new URLSearchParams(moodData)}`);
+    const res = await fetch(`${API_BASE}/api/mood?${new URLSearchParams(moodData)}`);
     const data = await res.json();
     renderResults(data);
   } catch (err) {
