@@ -1,6 +1,5 @@
-// Final full script.js with GPT, seed preview, pagination, spinners, error handling, and all legacy features
+// Final script.js with spinner, emoji highlighting, GPT, search, pagination, Firebase, and watchlist
 
-// Firebase Initialization
 const firebaseConfig = {
   apiKey: "AIzaSyBpjHeCWkzMYDU-F3vKyeGL6BWR-VTptu0",
   authDomain: "moodmatch-c44c3.firebaseapp.com",
@@ -13,11 +12,9 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 let currentUser = null;
+const API_BASE = "https://moodmatch-api-e4o7.vercel.app";
 
-// API Base URL
-const API_BASE = "https://moodmatch-api-4vdp.vercel.app";
-
-// Auth and Greeting
+// Auth state
 const loginBtn = document.getElementById("loginButton");
 const logoutBtn = document.getElementById("logoutButton");
 if (loginBtn) loginBtn.onclick = () => auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
@@ -25,7 +22,7 @@ if (logoutBtn) logoutBtn.onclick = () => auth.signOut();
 auth.onAuthStateChanged(user => {
   currentUser = user;
   const authSection = document.getElementById("authSection");
-  authSection.querySelectorAll("span").forEach(el => el.remove());
+  authSection.querySelectorAll("span").forEach(e => e.remove());
   if (user) {
     loginBtn?.classList.add("hidden");
     logoutBtn?.classList.remove("hidden");
@@ -38,11 +35,24 @@ auth.onAuthStateChanged(user => {
   }
 });
 
-// Emoji Toggle
-const emojiButtons = document.querySelectorAll('.emoji-btn');
-emojiButtons.forEach(btn => btn.addEventListener('click', () => btn.classList.toggle('active')));
+// Spinner
+function showSpinner() { document.getElementById("loadingSpinner").classList.remove("hidden"); }
+function hideSpinner() { document.getElementById("loadingSpinner").classList.add("hidden"); }
 
-// Reference Search Autocomplete & Preview
+// Emoji toggle highlight
+const emojiButtons = document.querySelectorAll('.emoji-btn');
+emojiButtons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    btn.classList.toggle('active');
+    if (btn.classList.contains('active')) {
+      btn.classList.add('bg-[#f3e7e8]', 'rounded-full');
+    } else {
+      btn.classList.remove('bg-[#f3e7e8]', 'rounded-full');
+    }
+  });
+});
+
+// Reference Search with spinner
 const referenceInput = document.getElementById("referenceSearch");
 const referenceResults = document.getElementById("referenceResults");
 const selectedReference = document.getElementById("selectedReference");
@@ -52,63 +62,59 @@ let selectedSeed = null;
 
 referenceInput.addEventListener("input", async (e) => {
   const query = e.target.value.trim();
-  if (!query) return hideSearchResults();
+  if (!query) { referenceResults.innerHTML = ""; referenceResults.classList.add("hidden"); return; }
   try {
-    showLoading(referenceResults);
+    showSpinner();
     const results = await fetch(`${API_BASE}/api/search?query=${encodeURIComponent(query)}`).then(r => r.json());
+    hideSpinner();
     renderSearchResults(results);
   } catch (err) {
+    hideSpinner();
     console.error("Search error", err);
     referenceResults.innerHTML = `<li class='p-2 text-red-500'>Error loading results</li>`;
   }
 });
 
-function showLoading(container){ container.innerHTML = "<li class='p-2'>Loading...</li>"; container.classList.remove("hidden"); }
-function hideSearchResults(){ referenceResults.innerHTML = ""; referenceResults.classList.add("hidden"); }
-function renderSearchResults(results){
+function renderSearchResults(results) {
   referenceResults.innerHTML = "";
   results.forEach(item => {
     const li = document.createElement("li");
     li.className = "flex items-center gap-3 p-2 cursor-pointer hover:bg-gray-100";
     li.innerHTML = `<img src="${item.image || ''}" class="w-10 h-14 rounded object-cover" /><span>${item.title} (${item.type})</span>`;
-    li.onclick = () => selectReference(item);
+    li.onclick = () => {
+      selectedSeed = item;
+      selectedRefImage.src = item.image;
+      selectedRefTitle.textContent = item.title;
+      selectedReference.classList.remove("hidden");
+      referenceResults.classList.add("hidden");
+      referenceInput.value = item.title;
+    };
     referenceResults.appendChild(li);
   });
   referenceResults.classList.remove("hidden");
 }
-function selectReference(item){
-  selectedSeed = item;
-  selectedRefImage.src = item.image;
-  selectedRefTitle.textContent = item.title;
-  selectedReference.classList.remove("hidden");
-  hideSearchResults();
-  referenceInput.value = item.title;
-}
 
-// Recommendation Fetch
+// Fetch Recommendations with spinner
 const recommendBtn = document.getElementById("recommendButton");
 recommendBtn.addEventListener("click", async () => {
   const criteria = document.getElementById("criteriaSelect").value;
   const emojis = [...document.querySelectorAll('.emoji-btn.active')].map(e => e.textContent).join(',');
   const context = `${document.getElementById("toggleFriends").checked ? 'with friends' : (document.getElementById("toggleAlone").checked ? 'alone' : '')}, ${document.getElementById("toggleLong").checked ? 'long session' : (document.getElementById("toggleShort").checked ? 'short session' : '')}`;
-  const moodData = {
-    mood: `Energy: ${document.getElementById("energySlider").value}, Positivity: ${document.getElementById("positivitySlider").value}, Emojis: ${emojis}, Context: ${context}, Prompt: ${document.getElementById("moodText").value}`,
-    criteria,
-    refId: selectedSeed?.id || "",
-    refType: selectedSeed?.type || ""
-  };
+  const moodData = { mood: `Energy: ${document.getElementById("energySlider").value}, Positivity: ${document.getElementById("positivitySlider").value}, Emojis: ${emojis}, Context: ${context}, Prompt: ${document.getElementById("moodText").value}`, criteria, refId: selectedSeed?.id || "", refType: selectedSeed?.type || "" };
   try {
-    showLoading(document.getElementById("movieList"));
+    showSpinner();
     const res = await fetch(`${API_BASE}/api/mood?${new URLSearchParams(moodData)}`);
     const data = await res.json();
+    hideSpinner();
     renderResults(data);
   } catch (err) {
+    hideSpinner();
     console.error("Recommendation fetch failed", err);
     document.getElementById("movieList").innerHTML = `<p class='text-red-500'>Failed to load recommendations</p>`;
   }
 });
 
-// Render Results with Pagination Support
+// Render Results with pagination and watchlist
 function renderResults(data) {
   renderList("movieList", data.movies);
   renderList("tvList", data.tv);
@@ -117,25 +123,25 @@ function renderResults(data) {
   spotify.innerHTML = data.spotify ? `<iframe src="${data.spotify}" width="300" height="380"></iframe>` : "";
 }
 
-function renderList(containerId, items, page = 1, perPage = 6){
+function renderList(containerId, items, page = 1, perPage = 6) {
   const container = document.getElementById(containerId);
   container.innerHTML = "";
   const start = (page - 1) * perPage;
-  const paginated = items.slice(start, start + perPage);
-  paginated.forEach(item => {
+  const pageItems = items.slice(start, start + perPage);
+  pageItems.forEach(item => {
     const div = document.createElement("div");
     div.className = "w-40 text-center";
     div.innerHTML = `<img src="${item.image}" class="rounded-lg w-full mb-2"/><p>${item.title}</p><button class='save-btn bg-red-500 text-white px-2 py-1 rounded mt-1'>Save</button>`;
     div.querySelector('.save-btn').onclick = () => saveToWatchlist(item);
     container.appendChild(div);
   });
-  if(items.length > perPage){
+  if (items.length > perPage) {
     const nav = document.createElement("div");
     nav.className = "flex gap-2 justify-center mt-2";
-    for(let i=1; i<=Math.ceil(items.length/perPage); i++){
+    for (let i = 1; i <= Math.ceil(items.length / perPage); i++) {
       const btn = document.createElement("button");
       btn.textContent = i;
-      btn.className = `px-2 py-1 rounded ${i===page?'bg-red-500 text-white':'bg-gray-200'}`;
+      btn.className = `px-2 py-1 rounded ${i === page ? 'bg-red-500 text-white' : 'bg-gray-200'}`;
       btn.onclick = () => renderList(containerId, items, i, perPage);
       nav.appendChild(btn);
     }
@@ -143,7 +149,6 @@ function renderList(containerId, items, page = 1, perPage = 6){
   }
 }
 
-// Watchlist
 async function saveToWatchlist(item) {
   if (!currentUser) return alert("Login to save items");
   const ref = db.collection("users").doc(currentUser.uid).collection("watchlist");
@@ -167,4 +172,4 @@ async function loadWatchlist() {
     container.appendChild(div);
   });
 }
-if(document.getElementById("watchlistContainer")) auth.onAuthStateChanged(()=>loadWatchlist());
+if (document.getElementById("watchlistContainer")) auth.onAuthStateChanged(() => loadWatchlist());
