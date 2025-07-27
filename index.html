@@ -8,12 +8,9 @@
   <link rel="stylesheet" as="style" onload="this.rel='stylesheet'"
     href="https://fonts.googleapis.com/css2?display=swap&family=Noto+Sans:wght@400;500;700;900&family=Plus+Jakarta+Sans:wght@400;500;700;800" />
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-
-  <!-- Firebase Compat SDKs (for firebase.auth() and firestore) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-
   <script defer src="script.js"></script>
 </head>
 <body class="bg-[#fcf8f8]" style='font-family:"Plus Jakarta Sans","Noto Sans",sans-serif;'>
@@ -25,49 +22,68 @@
       <a href="index.html" class="font-bold">Home</a>
       <a href="watchlist.html">Watchlist</a>
     </nav>
-
-    <!-- Added Google Login/Logout buttons -->
     <div id="authSection" class="flex gap-3">
       <button id="loginButton" class="px-4 py-1 bg-[#f3e7e8] rounded-full">Login</button>
       <button id="logoutButton" class="px-4 py-1 bg-[#e92932] text-white rounded-full hidden">Logout</button>
     </div>
   </header>
 
-  <!-- Main -->
-  <main class="flex flex-col items-center py-10 max-w-[960px] mx-auto">
-    <h2 class="text-[28px] font-bold text-center mb-6">Find Movies & Books by Mood</h2>
+  <!-- Mood Input Section -->
+  <main class="flex flex-col items-center py-8 max-w-[960px] mx-auto">
+    <h2 class="text-[28px] font-bold text-center mb-6">What's Your Mood?</h2>
 
-    <!-- Search -->
-    <div class="w-full px-4 relative">
-      <input id="searchInput" placeholder="Search for movies, series, or books"
-        class="w-full p-3 rounded-xl bg-[#f3e7e8] text-[#1b0e0e] placeholder-[#994d51] focus:outline-none" />
-      <ul id="searchResults"
-        class="absolute bg-white rounded-xl border mt-1 w-full shadow max-h-64 overflow-y-auto"></ul>
+    <!-- Sliders -->
+    <div class="flex flex-col gap-6 w-full max-w-[600px]">
+      <label class="flex flex-col">
+        Energy Level: <input id="energySlider" type="range" min="0" max="10" value="5" class="w-full">
+      </label>
+      <label class="flex flex-col">
+        Positivity Level: <input id="positivitySlider" type="range" min="0" max="10" value="5" class="w-full">
+      </label>
     </div>
-    <ul id="selectedList" class="mt-5 flex gap-3 flex-wrap"></ul>
 
-    <!-- Tags -->
-    <h3 class="text-lg font-bold mt-8">Select up to 5 Tags</h3>
-    <div id="tagOptions" class="flex gap-3 flex-wrap mt-3 px-4"></div>
+    <!-- Emoji Picker -->
+    <div class="flex gap-4 my-6" id="emojiPicker">
+      <button class="emoji-btn text-3xl">😌</button>
+      <button class="emoji-btn text-3xl">😭</button>
+      <button class="emoji-btn text-3xl">😎</button>
+      <button class="emoji-btn text-3xl">🤩</button>
+      <button class="emoji-btn text-3xl">😴</button>
+    </div>
 
-    <!-- Mood -->
-    <h3 class="text-lg font-bold mt-8">How did it make you feel?</h3>
-    <textarea id="moodText" placeholder="Describe how you felt..."
-      class="w-full max-w-[600px] p-3 rounded-xl bg-[#f3e7e8] text-[#1b0e0e] placeholder-[#994d51] mt-3"></textarea>
+    <!-- Free Text -->
+    <textarea id="moodText" placeholder="Describe what you want to feel..." 
+      class="w-full max-w-[600px] p-3 rounded-xl bg-[#f3e7e8] text-[#1b0e0e] placeholder-[#994d51]"></textarea>
 
-    <!-- Button -->
-    <button id="recommendButton" class="mt-6 px-6 py-3 bg-[#e92932] text-white rounded-full font-bold">
+    <!-- State Toggles -->
+    <div class="flex flex-wrap gap-4 mt-6">
+      <label><input type="checkbox" id="toggleAlone"> Alone</label>
+      <label><input type="checkbox" id="toggleFriends"> With Friends</label>
+      <label><input type="checkbox" id="toggleShort"> Short Session (30-60 min)</label>
+      <label><input type="checkbox" id="toggleLong"> Long Session (2+ hrs)</label>
+      <label><input type="checkbox" id="toggleLowEnergy"> Low Energy</label>
+      <label><input type="checkbox" id="toggleHighEnergy"> High Energy</label>
+    </div>
+
+    <!-- Get Recommendations -->
+    <button id="recommendButton" 
+      class="mt-6 px-6 py-3 bg-[#e92932] text-white rounded-full font-bold">
       Get Recommendations
     </button>
 
-    <!-- Recommendations -->
+    <!-- Results -->
     <section class="mt-10 w-full">
-      <h2 class="text-[24px] font-bold mb-4 px-4">Movies You Might Like</h2>
+      <h2 class="text-[24px] font-bold mb-4 px-4">Movies</h2>
       <div id="movieList" class="flex flex-wrap gap-4 px-4"></div>
-      <h2 class="text-[24px] font-bold mb-4 mt-8 px-4">TV Series You Might Like</h2>
+
+      <h2 class="text-[24px] font-bold mb-4 mt-8 px-4">TV Series</h2>
       <div id="tvList" class="flex flex-wrap gap-4 px-4"></div>
-      <h2 class="text-[24px] font-bold mb-4 mt-8 px-4">Books You Might Like</h2>
+
+      <h2 class="text-[24px] font-bold mb-4 mt-8 px-4">Books</h2>
       <div id="bookList" class="flex flex-wrap gap-4 px-4"></div>
+
+      <h2 class="text-[24px] font-bold mb-4 mt-8 px-4">Spotify Playlist</h2>
+      <div id="spotifyList" class="flex flex-wrap gap-4 px-4"></div>
     </section>
   </main>
 </body>
