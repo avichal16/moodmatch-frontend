@@ -95,7 +95,7 @@ async function removeFromWatchlist(title) {
 }
 
 // Fetch Recommendations
-const API_URL = "https://moodmatch-api-avichals-projects-c02944d8.vercel.app/api/mood";
+const API_URL = "https://moodmatch-api-e4o7.vercel.app/api/mood";
 const recommendBtn = document.getElementById("recommendButton");
 if (recommendBtn) recommendBtn.onclick = () => getRecs();
 
