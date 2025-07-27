@@ -8,12 +8,9 @@
   <link rel="stylesheet" as="style" onload="this.rel='stylesheet'"
     href="https://fonts.googleapis.com/css2?display=swap&family=Noto+Sans:wght@400;500;700;900&family=Plus+Jakarta+Sans:wght@400;500;700;800" />
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-
-  <!-- Firebase Compat SDKs for auth & Firestore -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-
   <script defer src="script.js"></script>
 </head>
 <body class="bg-[#fcf8f8]" style='font-family:"Plus Jakarta Sans","Noto Sans",sans-serif;'>
@@ -25,15 +22,13 @@
       <a href="index.html">Home</a>
       <a href="watchlist.html" class="font-bold">Watchlist</a>
     </nav>
-
-    <!-- Added Login/Logout buttons -->
     <div id="authSection" class="flex gap-3">
       <button id="loginButton" class="px-4 py-1 bg-[#f3e7e8] rounded-full">Login</button>
       <button id="logoutButton" class="px-4 py-1 bg-[#e92932] text-white rounded-full hidden">Logout</button>
     </div>
   </header>
 
-  <!-- Watchlist -->
+  <!-- Watchlist Content -->
   <main class="flex flex-col py-8 max-w-[960px] mx-auto">
     <h2 class="text-[28px] font-bold mb-4 px-4">Your Saved Titles</h2>
     <div id="watchlistContainer" class="flex flex-wrap gap-4 px-4"></div>
