@@ -36,6 +36,22 @@ auth.onAuthStateChanged(user => {
     logoutBtn?.classList.add("hidden");
   }
 });
+async function fetchSearchResultsFrontend(query) {
+  try {
+    const movieReq = fetch(`https://api.themoviedb.org/3/search/movie?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}`).then(r=>r.json());
+    const tvReq = fetch(`https://api.themoviedb.org/3/search/tv?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}`).then(r=>r.json());
+    const bookReq = fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}`).then(r=>r.json());
+
+    const [moviesRes, tvRes, booksRes] = await Promise.all([movieReq, tvReq, bookReq]);
+    const movies = (moviesRes.results || []).map(m => ({ id: m.id, title: m.title, type: "movie", image: m.poster_path ? `https://image.tmdb.org/t/p/w200${m.poster_path}` : "" }));
+    const tv = (tvRes.results || []).map(t => ({ id: t.id, title: t.name, type: "tv", image: t.poster_path ? `https://image.tmdb.org/t/p/w200${t.poster_path}` : "" }));
+    const books = (booksRes.items || []).map(b => ({ id: b.id, title: b.volumeInfo?.title, type: "book", image: b.volumeInfo?.imageLinks?.thumbnail || "" }));
+    return [...movies.slice(0,5), ...tv.slice(0,5), ...books.slice(0,5)];
+  } catch (e) {
+    console.error("Frontend search failed", e);
+    return [];
+  }
+}
 
 // Spinner controls
 function showSpinner() { document.getElementById("loadingSpinner").classList.remove("hidden"); }
