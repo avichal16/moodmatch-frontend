@@ -142,13 +142,48 @@ function renderList(containerId, items, page=1, perPage=6) {
   const pageItems = items.slice(start,start+perPage);
   pageItems.forEach(item => {
     const div = document.createElement("div");
-    div.className = "w-40 text-center";
+    div.className = "w-40 text-center flex flex-col";
+
+    const img = document.createElement("img");
+    img.src = item.image;
+    img.className = "rounded-lg w-full mb-2";
+    div.appendChild(img);
+
+    const title = document.createElement("p");
+    title.textContent = item.title;
+    div.appendChild(title);
 
     const desc = item.description || item.desc || "";
-    const description = desc ? `<p class='text-sm mt-1'>${desc}</p>` : "";
+    let descP;
+    if (desc) {
+      descP = document.createElement("p");
+      descP.className = "text-sm mt-1 desc clamp";
+      descP.textContent = desc;
+      div.appendChild(descP);
 
-    div.innerHTML = `<img src="${item.image}" class="rounded-lg w-full mb-2"/><p>${item.title}</p>${description}<button class='save-btn bg-red-500 text-white px-2 py-1 rounded mt-1'>Save</button>`;
-    div.querySelector('.save-btn').onclick = () => saveToWatchlist(item);
+      const moreBtn = document.createElement("button");
+      moreBtn.textContent = "See More";
+      moreBtn.className = "text-xs text-blue-500 mt-1";
+      moreBtn.onclick = () => {
+        descP.classList.toggle("clamp");
+        moreBtn.textContent = descP.classList.contains("clamp") ? "See More" : "See Less";
+      };
+      div.appendChild(moreBtn);
+    }
+
+    if (item.reason) {
+      const reason = document.createElement("p");
+      reason.className = "text-xs mt-1 text-gray-600";
+      reason.textContent = `Reason: ${item.reason}`;
+      div.appendChild(reason);
+    }
+
+    const save = document.createElement("button");
+    save.textContent = "Save";
+    save.className = "save-btn bg-red-500 text-white px-2 py-1 rounded mt-1";
+    save.onclick = () => saveToWatchlist(item);
+    div.appendChild(save);
+
     container.appendChild(div);
   });
   if (items.length > perPage) {
@@ -183,12 +218,32 @@ async function loadWatchlist() {
   snapshot.forEach(doc => {
     const item = doc.data();
     const div = document.createElement("div");
-    div.className = "w-40 text-center";
+    div.className = "w-40 text-center flex flex-col";
+
+    const img = document.createElement("img");
+    img.src = item.image;
+    img.className = "rounded-lg w-full mb-2";
+    div.appendChild(img);
+
+    const title = document.createElement("p");
+    title.textContent = item.title;
+    div.appendChild(title);
 
     const desc = item.description || item.desc || "";
-    const description = desc ? `<p class='text-sm mt-1'>${desc}</p>` : "";
+    if (desc) {
+      const p = document.createElement("p");
+      p.className = "text-sm mt-1 desc clamp";
+      p.textContent = desc;
+      div.appendChild(p);
+    }
 
-    div.innerHTML = `<img src="${item.image}" class="rounded-lg w-full mb-2"/><p>${item.title}</p>${description}`;
+    if (item.reason) {
+      const reason = document.createElement("p");
+      reason.className = "text-xs mt-1 text-gray-600";
+      reason.textContent = `Reason: ${item.reason}`;
+      div.appendChild(reason);
+    }
+
     container.appendChild(div);
   });
 }
