@@ -117,7 +117,8 @@ function renderSearchResults(results) {
 
 // Fetch recommendations with spinner
 const recommendBtn = document.getElementById("recommendButton");
-recommendBtn.addEventListener("click", async () => {
+if (recommendBtn) {
+  recommendBtn.addEventListener("click", async () => {
   const criteria = document.getElementById("criteriaSelect").value;
   const emojis = [...document.querySelectorAll('.emoji-btn.active')].map(e => e.textContent).join(',');
   const context = `${document.getElementById("toggleFriends").checked ? 'with friends' : (document.getElementById("toggleAlone").checked ? 'alone' : '')}, ${document.getElementById("toggleLong").checked ? 'long session' : (document.getElementById("toggleShort").checked ? 'short session' : '')}`;
@@ -133,7 +134,10 @@ recommendBtn.addEventListener("click", async () => {
     console.error("Recommendation fetch failed", e);
     document.getElementById("movieList").innerHTML = `<p class='text-red-500'>Failed to load recommendations</p>`;
   }
-});
+  });
+} else {
+  console.log("[debug] recommendButton not found - skipping recommendation setup");
+}
 
 // Render results with pagination and watchlist
 function renderResults(data) {
@@ -225,8 +229,12 @@ async function saveToWatchlist(item) {
 
 async function loadWatchlist(user) {
   currentUser = user || currentUser;
-  console.log("Loading watchlist for user", currentUser.uid);
   const container = document.getElementById("watchlistContainer");
+  if (!currentUser) {
+    container.innerHTML = "<p class='text-sm'>Login to view your watchlist.</p>";
+    return;
+  }
+  console.log("Loading watchlist for user", currentUser.uid);
   container.innerHTML = "Loading...";
   const snapshot = await db.collection("users").doc(currentUser.uid).collection("watchlist").get();
   container.innerHTML = "";
