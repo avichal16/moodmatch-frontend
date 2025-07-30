@@ -143,7 +143,10 @@ function renderList(containerId, items, page=1, perPage=6) {
   pageItems.forEach(item => {
     const div = document.createElement("div");
     div.className = "w-40 text-center";
-    const description = item.description ? `<p class='text-sm mt-1'>${item.description}</p>` : "";
+
+    const desc = item.description || item.desc || "";
+    const description = desc ? `<p class='text-sm mt-1'>${desc}</p>` : "";
+
     div.innerHTML = `<img src="${item.image}" class="rounded-lg w-full mb-2"/><p>${item.title}</p>${description}<button class='save-btn bg-red-500 text-white px-2 py-1 rounded mt-1'>Save</button>`;
     div.querySelector('.save-btn').onclick = () => saveToWatchlist(item);
     container.appendChild(div);
@@ -181,7 +184,10 @@ async function loadWatchlist() {
     const item = doc.data();
     const div = document.createElement("div");
     div.className = "w-40 text-center";
-    const description = item.description ? `<p class='text-sm mt-1'>${item.description}</p>` : "";
+
+    const desc = item.description || item.desc || "";
+    const description = desc ? `<p class='text-sm mt-1'>${desc}</p>` : "";
+
     div.innerHTML = `<img src="${item.image}" class="rounded-lg w-full mb-2"/><p>${item.title}</p>${description}`;
     container.appendChild(div);
   });
