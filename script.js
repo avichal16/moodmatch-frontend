@@ -269,7 +269,22 @@ async function loadWatchlist(user) {
       div.appendChild(reason);
     }
 
+    const remove = document.createElement("button");
+    remove.textContent = "Remove";
+    remove.className = "bg-gray-200 text-black px-2 py-1 rounded mt-1";
+    remove.onclick = () => removeFromWatchlist(doc.id, div);
+    div.appendChild(remove);
+
     container.appendChild(div);
   });
 }
 if (document.getElementById("watchlistContainer")) auth.onAuthStateChanged(user => loadWatchlist(user));
+
+async function removeFromWatchlist(docId, element) {
+  if (!currentUser) {
+    return alert("Login to modify watchlist");
+  }
+  await db.collection("users").doc(currentUser.uid).collection("watchlist").doc(docId).delete();
+  element.remove();
+  alert("Removed from watchlist");
+}
