@@ -78,14 +78,23 @@ const selectedRefImage = document.getElementById("selectedRefImage");
 const selectedRefTitle = document.getElementById("selectedRefTitle");
 let selectedSeed = null;
 
-referenceInput.addEventListener("input", async (e) => {
-  const query = e.target.value.trim();
-  if (!query) { referenceResults.innerHTML = ""; referenceResults.classList.add("hidden"); return; }
-  showSpinner();
-  const results = await fetchSearchResultsFrontend(query);
-  hideSpinner();
-  renderSearchResults(results);
-});
+if (referenceInput) {
+  referenceInput.addEventListener("input", async (e) => {
+    const query = e.target.value.trim();
+    if (!query) {
+      referenceResults.innerHTML = "";
+      referenceResults.classList.add("hidden");
+      return;
+    }
+    console.log("Searching references for:", query);
+    showSpinner();
+    const results = await fetchSearchResultsFrontend(query);
+    hideSpinner();
+    renderSearchResults(results);
+  });
+} else {
+  console.log("[debug] referenceSearch element not found - skipping search setup");
+}
 
 function renderSearchResults(results) {
   referenceResults.innerHTML = "";
@@ -201,22 +210,33 @@ function renderList(containerId, items, page=1, perPage=6) {
 }
 
 async function saveToWatchlist(item) {
-  if (!currentUser) return alert("Login to save items");
+  console.log("Attempting to save to watchlist", item);
+  if (!currentUser) {
+    console.log("[debug] Save failed - user not logged in");
+    return alert("Login to save items");
+  }
   const ref = db.collection("users").doc(currentUser.uid).collection("watchlist");
   const exists = await ref.where("id", "==", item.id || item.title).get();
   if (!exists.empty) return alert("Already saved");
   await ref.add(item);
+  console.log("[debug] Saved item", item.title);
   alert(`${item.title} saved!`);
 }
 
 async function loadWatchlist() {
-  if (!currentUser) return;
+  if (!currentUser) {
+    console.log("[debug] loadWatchlist called without user");
+    return;
+  }
+  console.log("Loading watchlist for user", currentUser.uid);
   const container = document.getElementById("watchlistContainer");
   container.innerHTML = "Loading...";
   const snapshot = await db.collection("users").doc(currentUser.uid).collection("watchlist").get();
   container.innerHTML = "";
+  console.log(`[debug] retrieved ${snapshot.size} items`);
   snapshot.forEach(doc => {
     const item = doc.data();
+    console.log("[debug] item", item);
     const div = document.createElement("div");
     div.className = "w-40 text-center flex flex-col";
 
