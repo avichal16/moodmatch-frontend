@@ -223,11 +223,8 @@ async function saveToWatchlist(item) {
   alert(`${item.title} saved!`);
 }
 
-async function loadWatchlist() {
-  if (!currentUser) {
-    console.log("[debug] loadWatchlist called without user");
-    return;
-  }
+async function loadWatchlist(user) {
+  currentUser = user || currentUser;
   console.log("Loading watchlist for user", currentUser.uid);
   const container = document.getElementById("watchlistContainer");
   container.innerHTML = "Loading...";
@@ -267,4 +264,4 @@ async function loadWatchlist() {
     container.appendChild(div);
   });
 }
-if (document.getElementById("watchlistContainer")) auth.onAuthStateChanged(() => loadWatchlist());
+if (document.getElementById("watchlistContainer")) auth.onAuthStateChanged(user => loadWatchlist(user));
