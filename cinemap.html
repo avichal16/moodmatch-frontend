@@ -4,94 +4,23 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#050810" />
-  <meta name="description" content="Explore movies, directors, genres, and cinematic connections through an interactive map." />
-  <title>CineMap — Explore the Evolution of Cinema</title>
+  <title>CineMap — Explore Cinema</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vis-network@9.1.12/styles/vis-network.min.css" />
-  <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.12/standalone/umd/vis-network.min.js"></script>
-  <script defer src="cinemap.js?v=2"></script>
+  <script defer src="cinemap.js?v=3"></script>
   <style>
-    :root { color-scheme: dark; --panel: rgba(12,18,32,.86); --line: rgba(148,163,184,.14); }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; }
-    body { font-family: Inter, system-ui, sans-serif; color: #e5e7eb; background: radial-gradient(circle at 15% 0%, rgba(124,58,237,.18), transparent 30rem), radial-gradient(circle at 88% 8%, rgba(14,165,233,.12), transparent 28rem), #050810; overflow: hidden; }
-    h1,h2,h3,.brand { font-family: "Plus Jakarta Sans", Inter, sans-serif; }
-    header { height: 72px; display:flex; align-items:center; justify-content:space-between; padding:0 24px; border-bottom:1px solid var(--line); background:rgba(5,8,16,.82); backdrop-filter:blur(18px); position:relative; z-index:20; }
-    .brand-wrap { display:flex; align-items:center; gap:12px; color:white; text-decoration:none; }
-    .brand-wrap img { height:46px; }
-    nav { display:flex; gap:22px; font-size:14px; }
-    nav a { color:#94a3b8; text-decoration:none; }
-    nav a:hover, nav a.active { color:white; }
-    .app { height:calc(100vh - 72px); position:relative; }
-    #graph { width:100%; height:100%; }
-    .top-panel { position:absolute; top:20px; left:50%; transform:translateX(-50%); width:min(760px,calc(100% - 32px)); z-index:10; background:var(--panel); border:1px solid var(--line); border-radius:22px; padding:14px; box-shadow:0 24px 80px rgba(0,0,0,.35); backdrop-filter:blur(20px); }
-    .title-row { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:11px; }
-    .title-row h1 { margin:0; font-size:20px; }
-    .title-row p { margin:3px 0 0; color:#94a3b8; font-size:12px; }
-    .search-row { display:flex; gap:10px; }
-    .search-wrap { flex:1; position:relative; }
-    input { width:100%; border:1px solid rgba(255,255,255,.1); background:#080d18; color:white; border-radius:14px; padding:13px 15px; outline:none; font-size:14px; }
-    input:focus { border-color:#8b5cf6; box-shadow:0 0 0 3px rgba(139,92,246,.16); }
-    button { border:0; border-radius:14px; padding:0 16px; min-height:44px; font-weight:700; color:white; cursor:pointer; background:linear-gradient(135deg,#7c3aed,#db2777); }
-    .ghost { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.09); color:#cbd5e1; }
-    .results { position:absolute; top:52px; left:0; right:0; max-height:320px; overflow:auto; background:#0b1120; border:1px solid var(--line); border-radius:14px; display:none; box-shadow:0 20px 50px rgba(0,0,0,.45); }
-    .result { display:flex; gap:10px; align-items:center; padding:9px; cursor:pointer; }
-    .result:hover { background:rgba(255,255,255,.06); }
-    .result img { width:38px; height:54px; object-fit:cover; border-radius:8px; background:#111827; }
-    .result strong { display:block; font-size:13px; }
-    .result span { color:#64748b; font-size:11px; }
-    .legend { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:11px; }
-    .legend span { font-size:11px; color:#94a3b8; border:1px solid var(--line); padding:5px 8px; border-radius:999px; background:rgba(255,255,255,.03); }
-    #mapStats { margin-left:auto; color:#64748b; border:0; background:transparent; }
-    .drawer { position:absolute; right:18px; top:18px; bottom:18px; width:min(390px,calc(100% - 36px)); z-index:12; background:var(--panel); border:1px solid var(--line); border-radius:24px; padding:18px; overflow:auto; transform:translateX(calc(100% + 30px)); transition:transform .28s ease; box-shadow:0 28px 90px rgba(0,0,0,.45); backdrop-filter:blur(22px); }
-    .drawer.open { transform:translateX(0); }
-    .close { float:right; width:34px; height:34px; min-height:34px; padding:0; background:rgba(255,255,255,.07); }
-    .poster { width:112px; aspect-ratio:2/3; border-radius:15px; object-fit:cover; background:#111827; }
-    .detail-head { display:flex; gap:15px; margin-top:10px; }
-    .detail-head h2 { margin:3px 0 5px; font-size:24px; }
-    .meta { color:#94a3b8; font-size:13px; }
-    .overview { color:#cbd5e1; font-size:13px; line-height:1.65; margin-top:16px; }
-    .chips { display:flex; flex-wrap:wrap; gap:7px; margin-top:14px; }
-    .chips span { background:rgba(124,58,237,.12); border:1px solid rgba(167,139,250,.22); color:#c4b5fd; border-radius:999px; padding:6px 9px; font-size:11px; }
-    .expand { width:100%; margin-top:18px; padding:12px; }
-    .hint { position:absolute; bottom:18px; left:18px; z-index:8; background:rgba(5,8,16,.78); border:1px solid var(--line); border-radius:14px; padding:10px 13px; font-size:11px; color:#94a3b8; backdrop-filter:blur(12px); }
-    #startupError { display:none; position:absolute; inset:50% auto auto 50%; transform:translate(-50%,-50%); z-index:30; width:min(520px,calc(100% - 32px)); padding:20px; border:1px solid rgba(244,63,94,.3); border-radius:18px; background:rgba(40,8,18,.94); color:#fecdd3; text-align:center; }
-    @media(max-width:760px){ header{padding:0 14px}.brand{display:none}nav{gap:12px}.top-panel{top:10px}.title-row p{display:none}.search-row{flex-wrap:wrap}.search-wrap{flex-basis:100%}.search-row button{flex:1}.drawer{top:10px;bottom:10px;right:10px;width:calc(100% - 20px)}.hint{display:none}#mapStats{width:100%;margin-left:0} }
+    :root{color-scheme:dark;--panel:rgba(12,18,32,.88);--line:rgba(148,163,184,.15)}*{box-sizing:border-box}html,body{height:100%;margin:0}body{font-family:Inter,system-ui,sans-serif;color:#e5e7eb;background:radial-gradient(circle at 15% 0%,rgba(124,58,237,.18),transparent 30rem),radial-gradient(circle at 88% 8%,rgba(14,165,233,.12),transparent 28rem),#050810;overflow:hidden}h1,h2,h3,.brand{font-family:"Plus Jakarta Sans",Inter,sans-serif}header{height:72px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid var(--line);background:rgba(5,8,16,.84);backdrop-filter:blur(18px);position:relative;z-index:20}.brand-wrap{display:flex;align-items:center;gap:12px;color:white;text-decoration:none}.brand-wrap img{height:46px}nav{display:flex;gap:22px;font-size:14px}nav a{color:#94a3b8;text-decoration:none}nav a:hover,nav a.active{color:white}.app{height:calc(100vh - 72px);position:relative}#graph{width:100%;height:100%;display:block;cursor:grab;touch-action:none}.edge{stroke:rgba(148,163,184,.34);stroke-width:1.4}.edge-label{fill:#64748b;font-size:10px}.node{cursor:pointer}.node circle,.node rect,.node polygon{stroke-width:2}.node text{fill:#e5e7eb;font-size:12px;font-weight:600;text-anchor:middle;paint-order:stroke;stroke:#050810;stroke-width:4px}.movie circle{fill:#111827;stroke:#8b5cf6}.director circle{fill:#083344;stroke:#22d3ee}.genre polygon{fill:#451a03;stroke:#f59e0b}.top-panel{position:absolute;top:20px;left:50%;transform:translateX(-50%);width:min(760px,calc(100% - 32px));z-index:10;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:14px;box-shadow:0 24px 80px rgba(0,0,0,.35);backdrop-filter:blur(20px)}.title-row{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:11px}.title-row h1{margin:0;font-size:20px}.title-row p{margin:3px 0 0;color:#94a3b8;font-size:12px}.search-row{display:flex;gap:10px}.search-wrap{flex:1;position:relative}input{width:100%;border:1px solid rgba(255,255,255,.1);background:#080d18;color:white;border-radius:14px;padding:13px 15px;outline:none;font-size:14px}input:focus{border-color:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.16)}button{border:0;border-radius:14px;padding:0 16px;min-height:44px;font-weight:700;color:white;cursor:pointer;background:linear-gradient(135deg,#7c3aed,#db2777)}.ghost{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);color:#cbd5e1}.results{position:absolute;top:52px;left:0;right:0;max-height:320px;overflow:auto;background:#0b1120;border:1px solid var(--line);border-radius:14px;display:none;box-shadow:0 20px 50px rgba(0,0,0,.45)}.result{display:flex;gap:10px;align-items:center;padding:9px;cursor:pointer}.result:hover{background:rgba(255,255,255,.06)}.result img{width:38px;height:54px;object-fit:cover;border-radius:8px;background:#111827}.result strong{display:block;font-size:13px}.result span{color:#64748b;font-size:11px}.legend{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:11px}.legend span{font-size:11px;color:#94a3b8;border:1px solid var(--line);padding:5px 8px;border-radius:999px;background:rgba(255,255,255,.03)}#mapStats{margin-left:auto;color:#64748b;border:0;background:transparent}.drawer{position:absolute;right:18px;top:18px;bottom:18px;width:min(390px,calc(100% - 36px));z-index:12;background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:18px;overflow:auto;transform:translateX(calc(100% + 30px));transition:transform .28s ease;box-shadow:0 28px 90px rgba(0,0,0,.45);backdrop-filter:blur(22px)}.drawer.open{transform:translateX(0)}.close{float:right;width:34px;height:34px;min-height:34px;padding:0;background:rgba(255,255,255,.07)}.poster{width:112px;aspect-ratio:2/3;border-radius:15px;object-fit:cover;background:#111827}.detail-head{display:flex;gap:15px;margin-top:10px}.detail-head h2{margin:3px 0 5px;font-size:24px}.meta{color:#94a3b8;font-size:13px}.overview{color:#cbd5e1;font-size:13px;line-height:1.65;margin-top:16px}.chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}.chips span{background:rgba(124,58,237,.12);border:1px solid rgba(167,139,250,.22);color:#c4b5fd;border-radius:999px;padding:6px 9px;font-size:11px}.hint{position:absolute;bottom:18px;left:18px;z-index:8;background:rgba(5,8,16,.78);border:1px solid var(--line);border-radius:14px;padding:10px 13px;font-size:11px;color:#94a3b8}.error{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);z-index:30;padding:18px 22px;border:1px solid rgba(244,63,94,.35);border-radius:16px;background:rgba(40,8,18,.95);color:#fecdd3;display:none}@media(max-width:760px){header{padding:0 14px}.brand{display:none}nav{gap:12px}.top-panel{top:10px}.title-row p{display:none}.search-row{flex-wrap:wrap}.search-wrap{flex-basis:100%}.search-row button{flex:1}.drawer{top:10px;bottom:10px;right:10px;width:calc(100% - 20px)}.hint{display:none}#mapStats{width:100%;margin-left:0}}
   </style>
 </head>
 <body>
-  <header>
-    <a class="brand-wrap" href="index.html"><img src="mmlogo.png" alt="MoodMatch"/><span class="brand">MoodMatch</span></a>
-    <nav><a href="index.html">Recommendations</a><a class="active" href="cinemap.html">CineMap</a><a href="watchlist.html">Watchlist</a></nav>
-  </header>
-  <main class="app">
-    <div id="graph" aria-label="Interactive cinema relationship map"></div>
-    <div id="startupError"></div>
-    <section class="top-panel">
-      <div class="title-row"><div><h1>CineMap</h1><p>A self-guided map of films, filmmakers, genres, and cinematic connections.</p></div></div>
-      <div class="search-row">
-        <div class="search-wrap"><input id="movieSearch" placeholder="Search any movie to enter the map…" autocomplete="off"/><div id="searchResults" class="results"></div></div>
-        <button id="randomButton">Surprise me</button>
-        <button id="fitButton" class="ghost">Fit map</button>
-        <button id="resetButton" class="ghost">Reset</button>
-      </div>
-      <div class="legend"><span>🎬 Movie</span><span>👤 Director</span><span>🎭 Genre</span><span>🔗 Relationship</span><span>Click any node to expand</span><span id="mapStats">Loading map…</span></div>
-    </section>
-    <aside id="drawer" class="drawer"><button id="closeDrawer" class="close" aria-label="Close details">×</button><div id="drawerContent"></div></aside>
-    <div class="hint">Scroll to zoom · Drag to pan · Click movies, directors, or genres to keep exploring</div>
-  </main>
-  <script>
-    window.addEventListener('load', function () {
-      setTimeout(function () {
-        if (!window.vis) {
-          var box = document.getElementById('startupError');
-          box.textContent = 'CineMap could not load its graph library. Please hard refresh the page or disable any content blocker for this site.';
-          box.style.display = 'block';
-        }
-      }, 1500);
-    });
-  </script>
+<header><a class="brand-wrap" href="index.html"><img src="mmlogo.png" alt="MoodMatch"><span class="brand">MoodMatch</span></a><nav><a href="index.html">Recommendations</a><a class="active" href="cinemap.html">CineMap</a><a href="watchlist.html">Watchlist</a></nav></header>
+<main class="app">
+  <svg id="graph" aria-label="Interactive cinema relationship map"><g id="viewport"><g id="edgesLayer"></g><g id="nodesLayer"></g></g></svg>
+  <div id="startupError" class="error"></div>
+  <section class="top-panel"><div class="title-row"><div><h1>CineMap</h1><p>A self-guided map of films, filmmakers, genres, and cinematic connections.</p></div></div><div class="search-row"><div class="search-wrap"><input id="movieSearch" placeholder="Search any movie to enter the map…" autocomplete="off"><div id="searchResults" class="results"></div></div><button id="randomButton">Surprise me</button><button id="fitButton" class="ghost">Fit map</button><button id="resetButton" class="ghost">Reset</button></div><div class="legend"><span>🎬 Movie</span><span>👤 Director</span><span>🎭 Genre</span><span>🔗 Relationship</span><span>Click any node to expand</span><span id="mapStats">Loading map…</span></div></section>
+  <aside id="drawer" class="drawer"><button id="closeDrawer" class="close" aria-label="Close details">×</button><div id="drawerContent"></div></aside>
+  <div class="hint">Scroll to zoom · Drag to pan · Click movies, directors, or genres to keep exploring</div>
+</main>
 </body>
 </html>
