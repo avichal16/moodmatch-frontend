@@ -9,9 +9,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://unpkg.com/vis-network/styles/vis-network.min.css" />
-  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
-  <script defer src="cinemap.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vis-network@9.1.12/styles/vis-network.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.12/standalone/umd/vis-network.min.js"></script>
+  <script defer src="cinemap.js?v=2"></script>
   <style>
     :root { color-scheme: dark; --panel: rgba(12,18,32,.86); --line: rgba(148,163,184,.14); }
     * { box-sizing: border-box; }
@@ -57,6 +57,7 @@
     .chips span { background:rgba(124,58,237,.12); border:1px solid rgba(167,139,250,.22); color:#c4b5fd; border-radius:999px; padding:6px 9px; font-size:11px; }
     .expand { width:100%; margin-top:18px; padding:12px; }
     .hint { position:absolute; bottom:18px; left:18px; z-index:8; background:rgba(5,8,16,.78); border:1px solid var(--line); border-radius:14px; padding:10px 13px; font-size:11px; color:#94a3b8; backdrop-filter:blur(12px); }
+    #startupError { display:none; position:absolute; inset:50% auto auto 50%; transform:translate(-50%,-50%); z-index:30; width:min(520px,calc(100% - 32px)); padding:20px; border:1px solid rgba(244,63,94,.3); border-radius:18px; background:rgba(40,8,18,.94); color:#fecdd3; text-align:center; }
     @media(max-width:760px){ header{padding:0 14px}.brand{display:none}nav{gap:12px}.top-panel{top:10px}.title-row p{display:none}.search-row{flex-wrap:wrap}.search-wrap{flex-basis:100%}.search-row button{flex:1}.drawer{top:10px;bottom:10px;right:10px;width:calc(100% - 20px)}.hint{display:none}#mapStats{width:100%;margin-left:0} }
   </style>
 </head>
@@ -67,6 +68,7 @@
   </header>
   <main class="app">
     <div id="graph" aria-label="Interactive cinema relationship map"></div>
+    <div id="startupError"></div>
     <section class="top-panel">
       <div class="title-row"><div><h1>CineMap</h1><p>A self-guided map of films, filmmakers, genres, and cinematic connections.</p></div></div>
       <div class="search-row">
@@ -75,10 +77,21 @@
         <button id="fitButton" class="ghost">Fit map</button>
         <button id="resetButton" class="ghost">Reset</button>
       </div>
-      <div class="legend"><span>🎬 Movie</span><span>👤 Director</span><span>🎭 Genre</span><span>🔗 Relationship</span><span>Click any node to expand</span><span id="mapStats">0 nodes · 0 connections</span></div>
+      <div class="legend"><span>🎬 Movie</span><span>👤 Director</span><span>🎭 Genre</span><span>🔗 Relationship</span><span>Click any node to expand</span><span id="mapStats">Loading map…</span></div>
     </section>
     <aside id="drawer" class="drawer"><button id="closeDrawer" class="close" aria-label="Close details">×</button><div id="drawerContent"></div></aside>
     <div class="hint">Scroll to zoom · Drag to pan · Click movies, directors, or genres to keep exploring</div>
   </main>
+  <script>
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        if (!window.vis) {
+          var box = document.getElementById('startupError');
+          box.textContent = 'CineMap could not load its graph library. Please hard refresh the page or disable any content blocker for this site.';
+          box.style.display = 'block';
+        }
+      }, 1500);
+    });
+  </script>
 </body>
 </html>
