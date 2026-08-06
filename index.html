@@ -5,134 +5,93 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MoodMatch</title>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" as="style" onload="this.rel='stylesheet'"
-    href="https://fonts.googleapis.com/css2?display=swap&family=Noto+Sans:wght@400;500;700;900&family=Plus+Jakarta+Sans:wght@400;500;700;800" />
+  <link rel="stylesheet" as="style" onload="this.rel='stylesheet'" href="https://fonts.googleapis.com/css2?display=swap&family=Noto+Sans:wght@400;500;700;900&family=Plus+Jakarta+Sans:wght@400;500;700;800" />
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script defer src="script.js"></script>
   <style>
-    .spinner {
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #e92932;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-      margin: 0 auto;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .desc.clamp {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-    }
+    .spinner { border:4px solid #f3f3f3; border-top:4px solid #e92932; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite; margin:0 auto; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .desc.clamp { overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; }
+    .mood-chip.active { background:#e92932; color:white; border-color:#e92932; }
   </style>
 </head>
-<body class="bg-[#fcf8f8]" style='font-family:"Plus Jakarta Sans","Noto Sans",sans-serif;'>
-
-  <!-- Header -->
-  <header class="flex items-center justify-between border-b border-[#f3e7e8] px-10 py-3">
-    <img src="mmlogo.png" alt="MoodMatch logo" class="h-32 w-auto" />
-    <nav class="flex gap-8 text-sm font-medium text-[#1b0e0e]">
+<body class="bg-[#fcf8f8] text-[#1b0e0e]" style='font-family:"Plus Jakarta Sans","Noto Sans",sans-serif;'>
+  <header class="flex items-center justify-between border-b border-[#f3e7e8] px-6 md:px-10 py-3">
+    <img src="mmlogo.png" alt="MoodMatch logo" class="h-20 md:h-24 w-auto" />
+    <nav class="flex gap-5 md:gap-8 text-sm font-medium">
       <a href="index.html" class="font-bold">Home</a>
       <a href="watchlist.html">Watchlist</a>
     </nav>
-    <div id="authSection" class="flex gap-3">
-      <button id="loginButton" class="px-4 py-1 bg-[#f3e7e8] rounded-full">Login</button>
-      <button id="logoutButton" class="px-4 py-1 bg-[#e92932] text-white rounded-full hidden">Logout</button>
+    <div id="authSection" class="flex items-center gap-3">
+      <button id="loginButton" class="px-4 py-2 bg-[#f3e7e8] rounded-full">Login</button>
+      <button id="logoutButton" class="px-4 py-2 bg-[#e92932] text-white rounded-full hidden">Logout</button>
     </div>
   </header>
 
-  <!-- Mood + Reference Input -->
-  <main class="flex flex-col items-center py-8 max-w-[960px] mx-auto">
-    <h2 class="text-[28px] font-bold text-center mb-6">What did you enjoy recently?</h2>
+  <main class="max-w-[1120px] mx-auto px-4 py-10">
+    <section class="max-w-[760px] mx-auto text-center">
+      <p class="text-sm font-bold uppercase tracking-[0.2em] text-[#994d51] mb-3">Movies · TV · Books · Music</p>
+      <h1 class="text-4xl md:text-5xl font-extrabold leading-tight">What are you in the mood for today?</h1>
+      <p class="mt-4 text-[#6f4c4e]">Choose a quick option or describe exactly what you want. MoodMatch always gives you movies, TV shows, books, and a playlist together.</p>
 
-    <!-- Reference Search -->
-    <div class="flex flex-col w-full max-w-[600px] mb-6">
-      <input id="referenceSearch" placeholder="Search for a movie, TV show, or book"
-        class="p-3 rounded-xl bg-[#f3e7e8] text-[#1b0e0e] placeholder-[#994d51]">
-      <ul id="referenceResults" class="bg-white mt-2 border rounded-lg hidden"></ul>
+      <textarea id="moodText" rows="3" placeholder="I want something uplifting after a stressful day..." class="mt-7 w-full p-4 rounded-2xl border border-[#ead9da] bg-white shadow-sm text-base placeholder-[#a77b7e]"></textarea>
 
-      <!-- Selected Reference Preview -->
-      <div id="selectedReference" class="flex items-center gap-3 mt-2 hidden">
-        <img id="selectedRefImage" src="" alt="Preview" class="w-14 h-20 object-cover rounded" />
-        <span id="selectedRefTitle" class="font-medium text-[#1b0e0e]"></span>
+      <div id="moodChips" class="mt-5 flex flex-wrap justify-center gap-2">
+        <button class="mood-chip border border-[#e3cfd1] bg-white px-4 py-2 rounded-full" data-prompt="I want something happy and uplifting.">😊 Happy</button>
+        <button class="mood-chip border border-[#e3cfd1] bg-white px-4 py-2 rounded-full" data-prompt="I want something calm, cozy, and relaxing.">😌 Relaxed</button>
+        <button class="mood-chip border border-[#e3cfd1] bg-white px-4 py-2 rounded-full" data-prompt="I want something exciting, adventurous, and energetic.">🤩 Excited</button>
+        <button class="mood-chip border border-[#e3cfd1] bg-white px-4 py-2 rounded-full" data-prompt="I want something romantic and emotionally warm.">💘 Romantic</button>
+        <button class="mood-chip border border-[#e3cfd1] bg-white px-4 py-2 rounded-full" data-prompt="I want something suspenseful, intense, and thrilling.">😨 Thrilling</button>
+        <button class="mood-chip border border-[#e3cfd1] bg-white px-4 py-2 rounded-full" data-prompt="I want something emotional and moving.">😢 Emotional</button>
+        <button class="mood-chip border border-[#e3cfd1] bg-white px-4 py-2 rounded-full" data-prompt="I want something thoughtful, imaginative, and mind-bending.">🧠 Mind-bending</button>
+        <button class="mood-chip border border-[#e3cfd1] bg-white px-4 py-2 rounded-full" data-prompt="I need something genuinely funny that will make me laugh.">😂 Funny</button>
+        <button class="mood-chip border border-[#e3cfd1] bg-white px-4 py-2 rounded-full" data-prompt="Surprise me with an unexpected but excellent entertainment mix.">✨ Surprise Me</button>
       </div>
-    </div>
 
-    <!-- Mood Controls -->
-    <div class="flex flex-col gap-6 w-full max-w-[600px]">
-      <label>Energy Level: <input id="energySlider" type="range" min="0" max="10" value="5" class="w-full"></label>
-      <label>Positivity Level: <input id="positivitySlider" type="range" min="0" max="10" value="5" class="w-full"></label>
-    </div>
+      <div class="mt-7 grid md:grid-cols-2 gap-4 text-left">
+        <div>
+          <label class="block text-sm font-bold mb-2">Content style</label>
+          <select id="criteriaSelect" class="w-full p-3 rounded-xl bg-white border border-[#ead9da]">
+            <option value="popular">Popular</option>
+            <option value="trending">Trending</option>
+            <option value="critically acclaimed">Critically Acclaimed</option>
+            <option value="hidden gems">Hidden Gems</option>
+            <option value="classic">Classics</option>
+            <option value="international">International</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-bold mb-2">Something you enjoyed recently <span class="font-normal text-[#8b686a]">(optional)</span></label>
+          <input id="referenceSearch" placeholder="Search a movie, TV show, or book" class="w-full p-3 rounded-xl bg-white border border-[#ead9da]" />
+          <ul id="referenceResults" class="bg-white mt-2 border rounded-lg hidden max-h-72 overflow-auto relative z-10"></ul>
+          <div id="selectedReference" class="items-center gap-3 mt-2 hidden">
+            <img id="selectedRefImage" src="" alt="Preview" class="w-12 h-16 object-cover rounded" />
+            <span id="selectedRefTitle" class="font-medium"></span>
+          </div>
+        </div>
+      </div>
 
-    <!-- Emoji Picker -->
-    <div class="flex gap-4 my-6" id="emojiPicker">
-      <button class="emoji-btn text-3xl">😌</button>
-      <button class="emoji-btn text-3xl">😭</button>
-      <button class="emoji-btn text-3xl">😎</button>
-      <button class="emoji-btn text-3xl">🤩</button>
-      <button class="emoji-btn text-3xl">😴</button>
-    </div>
+      <button id="recommendButton" class="mt-7 px-8 py-4 bg-[#e92932] hover:bg-[#cc2029] text-white rounded-full font-bold text-lg shadow-sm">✨ Find My Next Favorites</button>
+      <p id="formError" class="hidden mt-3 text-sm text-red-600"></p>
+      <div id="loadingSpinner" class="hidden mt-8"><div class="spinner"></div><p class="mt-3 text-sm text-[#765557]">Building your entertainment plan...</p></div>
+    </section>
 
-    <!-- Mood Text -->
-    <textarea id="moodText" placeholder="Describe what you want to feel..." 
-      class="w-full max-w-[600px] p-3 rounded-xl bg-[#f3e7e8] text-[#1b0e0e] placeholder-[#994d51]"></textarea>
-
-    <!-- Session Toggles -->
-    <div class="flex flex-wrap gap-4 mt-6">
-      <label><input type="checkbox" id="toggleAlone"> Alone</label>
-      <label><input type="checkbox" id="toggleFriends"> With Friends</label>
-      <label><input type="checkbox" id="toggleShort"> Short Session (30-60 min)</label>
-      <label><input type="checkbox" id="toggleLong"> Long Session (2+ hrs)</label>
-    </div>
-
-    <!-- Content Style Dropdown -->
-    <div class="flex flex-col w-full max-w-[600px] mt-4">
-      <label class="font-bold mb-1">Preferred Content Style</label>
-      <select id="criteriaSelect" class="p-3 rounded-xl bg-[#f3e7e8] text-[#1b0e0e]">
-        <option value="trending">Trending</option>
-        <option value="popular">Popular</option>
-        <option value="classic">Classic</option>
-        <option value="niche">Niche</option>
-        <option value="foreign">Foreign</option>
-        <option value="critically acclaimed">Critically Acclaimed</option>
-        <option value="hidden gems">Hidden Gems</option>
-      </select>
-    </div>
-
-    <!-- Get Recommendations Button -->
-    <button id="recommendButton" 
-      class="mt-6 px-6 py-3 bg-[#e92932] text-white rounded-full font-bold">
-      Get Recommendations
-    </button>
-
-    <!-- Loading Spinner -->
-    <div id="loadingSpinner" class="hidden mt-8">
-      <div class="spinner"></div>
-    </div>
-
-    <!-- Results Section -->
-    <section class="mt-10 w-full">
-      <h2 class="text-[24px] font-bold mb-4 px-4">Movies</h2>
-      <div id="movieList" class="flex flex-wrap gap-4 px-4"></div>
-
-      <h2 class="text-[24px] font-bold mb-4 mt-8 px-4">TV Series</h2>
-      <div id="tvList" class="flex flex-wrap gap-4 px-4"></div>
-
-      <h2 class="text-[24px] font-bold mb-4 mt-8 px-4">Books</h2>
-      <div id="bookList" class="flex flex-wrap gap-4 px-4"></div>
-
-      <h2 class="text-[24px] font-bold mb-4 mt-8 px-4">Spotify Playlist</h2>
-      <div id="spotifyList" class="flex flex-wrap gap-4 px-4"></div>
+    <section id="resultsSection" class="mt-14 w-full">
+      <div class="text-center mb-8">
+        <p class="text-sm font-bold uppercase tracking-[0.18em] text-[#994d51]">Your Entertainment Plan</p>
+        <h2 class="text-3xl font-extrabold mt-2">One mood, three ways to enjoy it</h2>
+      </div>
+      <h3 class="text-2xl font-bold mb-4 px-2">🎬 Movies</h3>
+      <div id="movieList" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 px-2"></div>
+      <h3 class="text-2xl font-bold mb-4 mt-10 px-2">📺 TV Series</h3>
+      <div id="tvList" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 px-2"></div>
+      <h3 class="text-2xl font-bold mb-4 mt-10 px-2">📚 Books</h3>
+      <div id="bookList" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 px-2"></div>
+      <h3 class="text-2xl font-bold mb-4 mt-10 px-2">🎵 Spotify Playlist</h3>
+      <div id="spotifyList" class="px-2"></div>
     </section>
   </main>
 </body>
