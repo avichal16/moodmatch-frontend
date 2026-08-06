@@ -18,6 +18,7 @@ let panY = 0;
 let scale = 1;
 let dragging = false;
 let dragStart = null;
+let activePointerId = null;
 let timer;
 
 const ns = "http://www.w3.org/2000/svg";
@@ -236,7 +237,7 @@ document.getElementById("resetButton").onclick = () => {
   nodeMap.clear(); edgeMap.clear(); nodesLayer.innerHTML = ""; edgesLayer.innerHTML = ""; drawer.classList.remove("open"); updateStats(); loadMovie(603, true).catch(showError);
 };
 document.getElementById("randomButton").onclick = async () => {
-  try { const movie = await getJson(`${API}?random=1`); if (movie) loadMovie(movie.id, true); }
+  try { const movie = await getJson(`${API}?random=1&t=${Date.now()}`); if (movie) loadMovie(movie.id, true); }
   catch (error) { showError(error); }
 };
 
@@ -251,9 +252,34 @@ svg.addEventListener("wheel", event => {
   panY = my - ((my - panY) / oldScale) * scale;
   setTransform();
 }, { passive: false });
-svg.addEventListener("pointerdown", event => { dragging = true; dragStart = { x: event.clientX - panX, y: event.clientY - panY }; svg.setPointerCapture(event.pointerId); });
-svg.addEventListener("pointermove", event => { if (!dragging) return; panX = event.clientX - dragStart.x; panY = event.clientY - dragStart.y; setTransform(); });
-svg.addEventListener("pointerup", () => { dragging = false; });
+
+svg.addEventListener("pointerdown", event => {
+  if (event.target.closest?.(".node")) return;
+  dragging = true;
+  activePointerId = event.pointerId;
+  dragStart = { x: event.clientX - panX, y: event.clientY - panY };
+  svg.setPointerCapture(event.pointerId);
+  svg.style.cursor = "grabbing";
+});
+
+svg.addEventListener("pointermove", event => {
+  if (!dragging || event.pointerId !== activePointerId) return;
+  panX = event.clientX - dragStart.x;
+  panY = event.clientY - dragStart.y;
+  setTransform();
+});
+
+function endDrag(event) {
+  if (!dragging || (activePointerId !== null && event.pointerId !== activePointerId)) return;
+  dragging = false;
+  if (activePointerId !== null && svg.hasPointerCapture(activePointerId)) svg.releasePointerCapture(activePointerId);
+  activePointerId = null;
+  dragStart = null;
+  svg.style.cursor = "grab";
+}
+
+svg.addEventListener("pointerup", endDrag);
+svg.addEventListener("pointercancel", endDrag);
 
 window.addEventListener("resize", fitMap);
 updateStats();
