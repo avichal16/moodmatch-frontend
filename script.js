@@ -30,7 +30,7 @@ auth.onAuthStateChanged(user => {
   logoutBtn?.classList.toggle("hidden", !user);
   if (user) {
     const greeting = document.createElement("span");
-    greeting.className = "hidden md:inline text-sm";
+    greeting.className = "hidden text-sm text-slate-400 md:inline";
     greeting.textContent = `Hi, ${user.displayName || "User"}`;
     authSection.appendChild(greeting);
   }
@@ -48,21 +48,14 @@ document.querySelectorAll(".mood-chip").forEach(chip => {
   });
 });
 
-function showSpinner() {
-  document.getElementById("loadingSpinner")?.classList.remove("hidden");
-}
-
-function hideSpinner() {
-  document.getElementById("loadingSpinner")?.classList.add("hidden");
-}
-
+function showSpinner() { document.getElementById("loadingSpinner")?.classList.remove("hidden"); }
+function hideSpinner() { document.getElementById("loadingSpinner")?.classList.add("hidden"); }
 function showError(message) {
   const error = document.getElementById("formError");
   if (!error) return;
   error.textContent = message;
   error.classList.remove("hidden");
 }
-
 function clearError() {
   const error = document.getElementById("formError");
   if (!error) return;
@@ -76,7 +69,6 @@ async function fetchSearchResults(query) {
     fetch(`https://api.themoviedb.org/3/search/tv?api_key=${TMDB_KEY}&query=${encodeURIComponent(query)}`).then(r => r.json()),
     fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}`).then(r => r.json())
   ]);
-
   return [
     ...(moviesRes.results || []).slice(0, 5).map(item => ({ id: item.id, title: item.title, type: "movie", image: item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : "" })),
     ...(tvRes.results || []).slice(0, 5).map(item => ({ id: item.id, title: item.name, type: "tv", image: item.poster_path ? `https://image.tmdb.org/t/p/w200${item.poster_path}` : "" })),
@@ -101,29 +93,20 @@ referenceInput?.addEventListener("input", event => {
     selectedReference?.classList.add("hidden");
     return;
   }
-
   searchTimer = setTimeout(async () => {
-    try {
-      const results = await fetchSearchResults(query);
-      renderSearchResults(results);
-    } catch (error) {
-      console.error("Reference search failed", error);
-    }
+    try { renderSearchResults(await fetchSearchResults(query)); }
+    catch (error) { console.error("Reference search failed", error); }
   }, 300);
 });
 
 function renderSearchResults(results) {
   if (!referenceResults) return;
   referenceResults.innerHTML = "";
-  if (!results.length) {
-    referenceResults.classList.add("hidden");
-    return;
-  }
-
+  if (!results.length) return referenceResults.classList.add("hidden");
   results.forEach(item => {
     const li = document.createElement("li");
-    li.className = "flex items-center gap-3 p-2 cursor-pointer hover:bg-[#fcf1f2]";
-    li.innerHTML = `<img src="${item.image || ""}" alt="" class="w-10 h-14 rounded object-cover bg-gray-100"><span class="text-sm">${item.title} <span class="text-gray-500">(${item.type})</span></span>`;
+    li.className = "flex items-center gap-3 rounded-lg p-2.5 text-slate-200 transition hover:bg-white/[0.07] cursor-pointer";
+    li.innerHTML = `<img src="${item.image || ""}" alt="" class="h-14 w-10 rounded-md object-cover bg-slate-800"><span class="text-sm font-medium">${item.title} <span class="text-slate-500">(${item.type})</span></span>`;
     li.onclick = () => {
       selectedSeed = item;
       if (selectedRefImage) selectedRefImage.src = item.image || "";
@@ -139,26 +122,25 @@ function renderSearchResults(results) {
 }
 
 const recommendBtn = document.getElementById("recommendButton");
-recommendBtn?.addEventListener("click", async () => {
+recommendBtn?.addEventListener("click", requestRecommendations);
+
+async function requestRecommendations() {
   const mood = moodText?.value.trim();
   if (!mood) {
     showError("Choose a mood or describe what you want first.");
     moodText?.focus();
     return;
   }
-
   clearError();
   recommendBtn.disabled = true;
   recommendBtn.classList.add("opacity-60", "cursor-not-allowed");
   showSpinner();
-
   const params = new URLSearchParams({
     mood,
     criteria: document.getElementById("criteriaSelect")?.value || "popular",
     refId: selectedSeed?.id || "",
     refType: selectedSeed?.type || ""
   });
-
   try {
     const response = await fetch(`${API_BASE}/api/mood?${params}`);
     const data = await response.json();
@@ -173,17 +155,19 @@ recommendBtn?.addEventListener("click", async () => {
     recommendBtn.disabled = false;
     recommendBtn.classList.remove("opacity-60", "cursor-not-allowed");
   }
-});
+}
 
 function renderResults(data) {
+  const planTitle = document.getElementById("planTitle");
+  if (planTitle) planTitle.textContent = data.planTitle || "Your Personalized Entertainment Plan";
   renderList("movieList", data.movies || []);
   renderList("tvList", data.tv || []);
   renderList("bookList", data.books || []);
   const spotify = document.getElementById("spotifyList");
   if (spotify) {
     spotify.innerHTML = data.spotify
-      ? `<iframe src="${data.spotify}" width="100%" height="352" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" class="rounded-xl"></iframe>`
-      : `<p class="text-sm text-gray-500">No playlist was available for this mood.</p>`;
+      ? `<iframe src="${data.spotify}" width="100%" height="352" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" class="rounded-2xl"></iframe>`
+      : `<p class="p-5 text-sm text-slate-500">No playlist was available for this mood.</p>`;
   }
 }
 
@@ -191,40 +175,52 @@ function renderList(containerId, items) {
   const container = document.getElementById(containerId);
   if (!container) return;
   container.innerHTML = "";
-
   if (!items.length) {
-    container.innerHTML = `<p class="col-span-full text-sm text-gray-500">No recommendations available.</p>`;
+    container.innerHTML = `<p class="col-span-full rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm text-slate-500">No recommendations available.</p>`;
     return;
   }
-
   items.slice(0, 6).forEach(item => {
     const card = document.createElement("article");
-    card.className = "bg-white rounded-2xl overflow-hidden border border-[#f0e2e3] shadow-sm flex flex-col";
+    card.className = "group relative flex min-h-full flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-slate-900/70 shadow-[0_18px_45px_rgba(0,0,0,.22)] transition duration-300 hover:-translate-y-1.5 hover:border-violet-400/30 hover:shadow-[0_22px_60px_rgba(76,29,149,.22)]";
 
+    const media = document.createElement("div");
+    media.className = "relative overflow-hidden bg-slate-800 aspect-[2/3]";
     const image = document.createElement("img");
     image.src = item.image || "";
     image.alt = item.title || "Recommendation";
-    image.className = "w-full aspect-[2/3] object-cover bg-[#f3e7e8]";
-    card.appendChild(image);
+    image.loading = "lazy";
+    image.className = "h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]";
+    if (!item.image) image.style.display = "none";
+    media.appendChild(image);
+    if (!item.image) {
+      const fallback = document.createElement("div");
+      fallback.className = "flex h-full items-center justify-center bg-gradient-to-br from-slate-800 to-violet-950 p-4 text-center text-sm font-bold text-slate-400";
+      fallback.textContent = item.title;
+      media.appendChild(fallback);
+    }
+    if (typeof item.score === "number") {
+      const score = document.createElement("span");
+      score.className = "absolute right-2 top-2 rounded-full border border-white/10 bg-black/60 px-2 py-1 text-[10px] font-bold text-violet-200 backdrop-blur";
+      score.textContent = `${Math.round(item.score * 100)}% match`;
+      media.appendChild(score);
+    }
+    card.appendChild(media);
 
     const body = document.createElement("div");
-    body.className = "p-3 flex flex-col flex-1";
-
+    body.className = "flex flex-1 flex-col p-4";
     const title = document.createElement("h4");
-    title.className = "font-bold text-sm leading-snug";
+    title.className = "text-sm font-bold leading-snug text-white";
     title.textContent = item.title;
     body.appendChild(title);
-
     if (item.reason) {
       const reason = document.createElement("p");
-      reason.className = "text-xs text-[#765557] mt-2";
+      reason.className = "mt-2 text-xs leading-5 text-slate-400";
       reason.textContent = item.reason;
       body.appendChild(reason);
     }
-
     const save = document.createElement("button");
-    save.className = "mt-auto pt-3 text-sm font-bold text-[#e92932] text-left";
-    save.textContent = "+ Save";
+    save.className = "mt-auto pt-4 text-left text-xs font-bold text-violet-300 transition hover:text-violet-200";
+    save.textContent = "+ Save to Watchlist";
     save.onclick = () => saveToWatchlist(item);
     body.appendChild(save);
     card.appendChild(body);
@@ -246,10 +242,9 @@ async function loadWatchlist(user) {
   const container = document.getElementById("watchlistContainer");
   if (!container) return;
   if (!currentUser) {
-    container.innerHTML = "<p class='text-sm'>Login to view your watchlist.</p>";
+    container.innerHTML = "<p class='text-sm text-slate-400'>Login to view your watchlist.</p>";
     return;
   }
-
   container.innerHTML = "Loading...";
   const snapshot = await db.collection("users").doc(currentUser.uid).collection("watchlist").get();
   container.innerHTML = "";
@@ -260,7 +255,7 @@ async function loadWatchlist(user) {
     card.innerHTML = `<img src="${item.image || ""}" class="rounded-lg w-full mb-2"><p>${item.title || ""}</p>`;
     const remove = document.createElement("button");
     remove.textContent = "Remove";
-    remove.className = "bg-gray-200 text-black px-2 py-1 rounded mt-1";
+    remove.className = "mt-1 rounded bg-slate-700 px-2 py-1 text-white";
     remove.onclick = async () => {
       await db.collection("users").doc(currentUser.uid).collection("watchlist").doc(doc.id).delete();
       card.remove();
@@ -270,6 +265,4 @@ async function loadWatchlist(user) {
   });
 }
 
-if (document.getElementById("watchlistContainer")) {
-  auth.onAuthStateChanged(user => loadWatchlist(user));
-}
+if (document.getElementById("watchlistContainer")) auth.onAuthStateChanged(user => loadWatchlist(user));
