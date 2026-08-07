@@ -23,6 +23,23 @@ fitMap = function(max = .96) {
   setTransform();
 };
 
+// Load the MusicMap-style typography layer without another HTML dependency.
+if (!document.querySelector('link[data-cinemap-typography]')) {
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = 'cinemap-typography.css?v=2';
+  link.dataset.cinemapTypography = '1';
+  document.head.appendChild(link);
+}
+
+if (!document.querySelector('script[data-cinemap-typography]')) {
+  const script = document.createElement('script');
+  script.src = 'cinemap-typography.js?v=1';
+  script.defer = true;
+  script.dataset.cinemapTypography = '1';
+  document.head.appendChild(script);
+}
+
 // Rebuild once with the compact coordinates after the main renderer has initialized.
 seedAtlas();
 fitMap(.96);
