@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&display=swap');
+
 /* MusicMap-inspired CineMap typography: text is the interface, not cards. */
 .node-title,
 .region-label,
@@ -70,7 +72,6 @@
   stroke-width: 2.6px;
 }
 
-/* Preserve category color, but keep default text understated like the reference map. */
 .node.movie .node-title{fill:rgba(216,156,255,.78)}
 .node.director .node-title,.node.person .node-title{fill:rgba(69,208,213,.78)}
 .node.actor .node-title{fill:rgba(239,92,145,.78)}
@@ -101,7 +102,6 @@
   fill: rgba(255,255,255,.85);
 }
 
-/* Related nodes stay readable; everything else drops deep into the background. */
 .node:not(.dimmed):not(.focused) .node-title { opacity: .9; }
 .node.dimmed { opacity: .18; }
 .node.dimmed .node-title { filter: none; }
@@ -112,7 +112,6 @@
 
 .region-halo { opacity: .24; stroke-width: .8; }
 
-/* Tighter surrounding UI so the map remains the visual focus. */
 .explore-menu button,
 .search-panel input,
 .legend,
