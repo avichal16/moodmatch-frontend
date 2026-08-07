@@ -1,0 +1,126 @@
+/* MusicMap-inspired CineMap typography: text is the interface, not cards. */
+.node-title,
+.region-label,
+.region-sub,
+.edge-label {
+  font-family: "Barlow Condensed", "Roboto Condensed", "Arial Narrow", Inter, sans-serif;
+  text-transform: uppercase;
+}
+
+.node-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .065em;
+  line-height: 1;
+  fill: rgba(255,255,255,.76);
+  paint-order: stroke;
+  stroke: rgba(3,5,10,.78);
+  stroke-width: 2.6px;
+  stroke-linejoin: round;
+  text-rendering: geometricPrecision;
+}
+
+.node.seed .node-title {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .07em;
+  opacity: .82;
+}
+
+.node-meta {
+  font-family: "Barlow Condensed", "Roboto Condensed", "Arial Narrow", Inter, sans-serif;
+  font-size: 6.5px;
+  font-weight: 500;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  fill: rgba(232,237,245,.46);
+  paint-order: stroke;
+  stroke: rgba(3,5,10,.8);
+  stroke-width: 2.4px;
+}
+
+.region-label {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .105em;
+  paint-order: stroke;
+  stroke: rgba(3,5,10,.82);
+  stroke-width: 3.4px;
+}
+
+.region-sub {
+  font-size: 6.5px;
+  font-weight: 500;
+  letter-spacing: .16em;
+  fill: rgba(232,237,245,.42);
+  paint-order: stroke;
+  stroke: rgba(3,5,10,.82);
+  stroke-width: 2.4px;
+}
+
+.edge-label {
+  font-family: "Barlow Condensed", "Roboto Condensed", "Arial Narrow", Inter, sans-serif;
+  font-size: 6.5px;
+  font-weight: 500;
+  letter-spacing: .075em;
+  text-transform: uppercase;
+  fill: rgba(232,237,245,.48);
+  paint-order: stroke;
+  stroke: rgba(3,5,10,.9);
+  stroke-width: 2.6px;
+}
+
+/* Preserve category color, but keep default text understated like the reference map. */
+.node.movie .node-title{fill:rgba(216,156,255,.78)}
+.node.director .node-title,.node.person .node-title{fill:rgba(69,208,213,.78)}
+.node.actor .node-title{fill:rgba(239,92,145,.78)}
+.node.genre .node-title{fill:rgba(244,163,64,.82)}
+.node.movement .node-title{fill:rgba(179,93,242,.8)}
+.node.style .node-title{fill:rgba(124,131,255,.8)}
+.node.country .node-title{fill:rgba(131,214,109,.8)}
+.node.decade .node-title{fill:rgba(240,200,90,.82)}
+.node.company .node-title{fill:rgba(97,169,247,.8)}
+
+.node:hover .node-title {
+  opacity: 1;
+  font-weight: 700;
+  filter: drop-shadow(0 0 4px currentColor);
+}
+
+.node.focused .node-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: .045em;
+  opacity: 1;
+  fill: #fff;
+  filter: drop-shadow(0 0 9px currentColor);
+}
+
+.node.focused .node-meta {
+  font-size: 7px;
+  fill: rgba(255,255,255,.85);
+}
+
+/* Related nodes stay readable; everything else drops deep into the background. */
+.node:not(.dimmed):not(.focused) .node-title { opacity: .9; }
+.node.dimmed { opacity: .18; }
+.node.dimmed .node-title { filter: none; }
+
+.edge { stroke-width: .82; opacity: .42; }
+.edge.active { stroke-width: 1.35; opacity: .95; filter: drop-shadow(0 0 3px currentColor); }
+.edge.dimmed { opacity: .035; }
+
+.region-halo { opacity: .24; stroke-width: .8; }
+
+/* Tighter surrounding UI so the map remains the visual focus. */
+.explore-menu button,
+.search-panel input,
+.legend,
+.map-help,
+.status {
+  font-family: "Barlow Condensed", "Roboto Condensed", "Arial Narrow", Inter, sans-serif;
+  letter-spacing: .045em;
+}
+
+.explore-menu button { text-transform: uppercase; font-size: 10px; }
+.legend { text-transform: uppercase; letter-spacing: .06em; }
